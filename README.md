@@ -1,0 +1,2 @@
+# stow
+Saved config files
