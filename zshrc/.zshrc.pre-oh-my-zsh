@@ -1,0 +1,53 @@
+# .zshrc
+
+# Source global definitions
+if [ -f /etc/zshrc ]; then
+  . /etc/zshrc
+fi
+
+fastfetch --kitty-direct /home/mike/Pictures/Logo/openmandriva-logo1.png
+
+BAT_THEME="base16"
+
+# Uncomment the following line if you don't like systemctl's auto-paging feature:
+# export SYSTEMD_PAGER=
+
+# User specific aliases and functions
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+#Aliases
+#alias alias_name="command_to_run"
+
+#Long format list
+alias ll="ls -la"
+
+#DNF5
+alias dnf="dnf5" && alias sudo="sudo "
+
+#Upgrade system
+alias dsync="sudo dnf5 clean all;dnf5 clean all; sudo dnf5 distro-sync --allowerasing --refresh; flatpak update; cargo install-update -a"
+
+#SpotX
+alias spotx="bash <(curl -sSL https://spotx-official.github.io/run.sh) -f"
+
+#LSD
+alias ls='"lsd"'
+
+#History or latest installed packages
+alias dnf-history="rpm -qa --last |less"
+
+#Install new package
+alias din="sudo dnf5 install"
+
+#Remove package
+alias drm="sudo dnf5 remove"
+
+#Search for package name
+alias dsearch="sudo dnf5 search"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+
