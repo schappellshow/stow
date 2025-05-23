@@ -232,20 +232,20 @@ matches:
     propagate_case: true
     word: true
 
-  - trigger: "cooperate"
-    replace: "coöperate"
-    propagate_case: true
-    word: true
+#  - trigger: "cooperate"
+#    replace: "coöperate"
+#    propagate_case: true
+#    word: true
 
   - trigger: "coopt"
     replace: "coöpt"
     propagate_case: true
     word: true
 
-  - trigger: "coordinate"
-    replace: "coördinate"
-    propagate_case: true
-    word: true
+#  - trigger: "coordinate"
+#    replace: "coördinate"
+#    propagate_case: true
+#    word: true
 
   - trigger: "cortege"
     replace: "cortège"

@@ -80,3 +80,7 @@ matches:
   - trigger: ":weekend2"
     replace: "Have a great weekend, {name}! 😁"
 
+  - trigger: ":flat"
+    replace: "😑"
+
+
