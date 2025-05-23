@@ -9,7 +9,7 @@ echo -e "\033[0;31m╔═══════════════════�
 echo -e "\033[0;31m║**Updating all System packages**║\033[0m" # Red for root.
 echo -e "\033[0;31m╚════════════════════════════════╝\033[0m" # Red for root.
 echo
-sudo dnf clean all ; dnf clean all ; sudo dnf upgrade; 2>&1| tee dsync2-log.txt
+sudo dnf clean all ; dnf clean all ; sudo dnf upgrade; 2>&1| tee ~/dsync-log.txt
 echo
 echo -e "\033[0;34m╔══════════════════════════════════╗\033[0m" # Yellow for user
 echo -e "\033[0;34m║**Updating Flatpaks from FlatHub**║\033[0m" # Yellow for user
