@@ -1,3 +1,8 @@
+# Remove kitty socket only if it exists but Kitty is NOT responding to it
+if [ -S /tmp/kitty.socket ] && ! kitty @ --to unix:/tmp/kitty.socket ls >/dev/null 2>&1; then
+    rm -f /tmp/kitty.socket
+fi
+
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH
 
@@ -129,4 +134,3 @@ eval "$(zoxide init zsh)"
 
 eval "$(zoxide init --cmd cd zsh)"
 . "$HOME/.cargo/env"
-

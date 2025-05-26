@@ -11,6 +11,6 @@ if [ "$DESKTOP_SESSION" = "plasma" ]; then
    sleep 20s
    killall conky
    cd "$HOME/.conky"
-   conky -c "$HOME/.conky/Titus (Original).conkyrc" &
+   conky -c "$HOME/.conky/titus_modified.conkyrc" &
    exit 0
 fi
