@@ -134,3 +134,5 @@ eval "$(zoxide init zsh)"
 
 eval "$(zoxide init --cmd cd zsh)"
 . "$HOME/.cargo/env"
+
+# This is just an additional line to test my GPG key #
