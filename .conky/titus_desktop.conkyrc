@@ -144,7 +144,6 @@ conky.config = {
 conky.text = [[
 ${color6}${voffset 4}${font GE Inspira:size=36}${alignc}${time %l}:${time %M} ${time %p}${font}${color}
 ${color6}${voffset 4}${font GE Inspira:size=12}${alignc}${time %A} ${time %B} ${time %e}, ${time %Y}${font}${color}
-
 ${color5}${font Roboto:size=10}${voffset 2}S Y S T E M   ${hr 2}${font}${color}
 ${color2}Hostname:${color} ${alignr}${nodename}
 ${color2}Distro:${color} ${alignr}${execi 6000 lsb_release -a | grep 'Description'|awk {'print $2, $3, $4, $5'}}
@@ -160,6 +159,10 @@ ${color2}${offset 30}CPU Core 1:${color} ${alignr}${offset -10}${cpu cpu1}%${ali
 ${color2}${offset 30}CPU Core 2:${color} ${alignr}${offset -10}${cpu cpu2}%${alignr}${cpubar cpu2}
 ${color2}${offset 30}CPU Core 3:${color} ${alignr}${offset -10}${cpu cpu3}%${alignr}${cpubar cpu3}
 ${color2}${offset 30}CPU Core 4:${color} ${alignr}${offset -10}${cpu cpu4}%${alignr}${cpubar cpu4}
+${color2}${offset 30}CPU Core 5:${color} ${alignr}${offset -10}${cpu cpu5}%${alignr}${cpubar cpu5}
+${color2}${offset 30}CPU Core 6:${color} ${alignr}${offset -10}${cpu cpu6}%${alignr}${cpubar cpu6}
+${color2}${offset 30}CPU Core 7:${color} ${alignr}${offset -10}${cpu cpu7}%${alignr}${cpubar cpu7}
+${color2}${offset 30}CPU Core 8:${color} ${alignr}${offset -10}${cpu cpu8}%${alignr}${cpubar cpu8}
 ${color2}Top Processes${goto 222}cpu%${goto 274}mem%${color}
 ${voffset 4}     1  -  ${top name 1}${alignr}${goto 170} ${goto 222}${top cpu 1} ${goto 274}${top mem 1}
      2  -  ${top name 2}${alignr} ${goto 222}${top cpu 2} ${goto 274}${top mem 2}
@@ -185,9 +188,9 @@ ${color2}Back-Ups - HDD:${color} ${alignr}${offset -10}${fs_used /media/mike/HDD
 ${color2}I/O Read:${color} ${alignr}${offset -10}${diskio_read /dev/sda1}${alignr}${diskiograph_read sda1 8,100}
 ${color2}I/O Write:${color} ${alignr}${offset -10}${diskio_write /dev/sda1}${alignr}${diskiograph_write sda1 8,100}
 ${voffset 4}${color5}${font Roboto:size=10} N E T W O R K   ${hr 2}${font}${color}
-${color2}WiFi IP Address: ${color} ${alignr}${offset -10$}${addrs wlp2s0}
-${color2}WiFi Up:${color} ${alignr}${offset -10$}${upspeed wlp2s0}${alignr}${upspeedgraph wlp2s0 8,100}
-${color2}WiFi Down:${color} ${alignr}${offset -10$}${downspeed wlp2s0}${alignr}${downspeedgraph wlp2s0 8,100}
+#${color2}WiFi IP Address: ${color} ${alignr}${offset -10$}${addrs wlp2s0}
+#${color2}WiFi Up:${color} ${alignr}${offset -10$}${upspeed wlp2s0}${alignr}${upspeedgraph wlp2s0 8,100}
+#${color2}WiFi Down:${color} ${alignr}${offset -10$}${downspeed wlp2s0}${alignr}${downspeedgraph wlp2s0 8,100}
 ${color2}Eth IP Address: ${color} ${alignr}${offset -10$}${addrs enp7s0}
 ${color2}Eth Up:${color} ${alignr}${offset -10$}${upspeed enp7s0}${alignr}${upspeedgraph enp7s0 8,100}
 ${color2}Eth Down:${color} ${alignr}${offset -10$}${downspeed enp7s0}${alignr}${downspeedgraph enp7s0 8,100}
