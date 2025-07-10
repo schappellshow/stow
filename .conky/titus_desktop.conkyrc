@@ -198,8 +198,8 @@ ${voffset 4}${color5}${font Roboto:size=10} GPU ${hr 2}${font}${color}
 ${offset 30}${font Roboto:size=10:bold}${color5}AMD Radeon RX 6600${font}
 ${voffset 4}${color2}GPU Temp:${color}${alignr}${execi 10 sensors | grep -m 1 'edge' | awk '{print $2}'}
 ${color2}Fan Speed:${color}${alignr}${execi 10 sensors | grep -m 1 'fan1' | awk '{print $2}'} RPM
-${color2}GPU Core Clock:${color}${alignr}${execi 10 cat /sys/class/drm/card0/device/pp_dpm_sclk | grep '*' | awk '{print $2}'} MHz
-${color2}Memory Clock:${color}${alignr}${execi 10 cat /sys/class/drm/card0/device/pp_dpm_mclk | grep '*' | awk '{print $2}'} MHz
+${color2}GPU Core Clock:${color}${alignr}${execi 10 cat /sys/class/drm/card0/device/pp_dpm_sclk | grep '*' | awk '{print $2}'}
+${color2}Memory Clock:${color}${alignr}${execi 10 cat /sys/class/drm/card0/device/pp_dpm_mclk | grep '*' | awk '{print $2}'}
 ${color2}GPU Usage:${color}${alignr}${execi 3 radeontop -d - -l1 | grep -o 'gpu [0-9.]\+%' | awk '{print $2}'}
 
 
