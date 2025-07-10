@@ -83,4 +83,6 @@ matches:
   - trigger: ":flat"
     replace: "😑"
 
+  - trigger: ":brow"
+    replace: "🤨"
 
