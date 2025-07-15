@@ -50,7 +50,7 @@ font-family-italic = Hack-Italic
 font-family-bold-italic = Hack-Bold-Italic
 font-size = 11
 
-background-opacity = 0.75
+background-opacity = 0.5
 background-blur = true
 # background-blur-radius = 0
 
@@ -68,6 +68,8 @@ window-decoration = server
 mouse-hide-while-typing = true
 
 window-theme = ghostty
+
+window-decoration = none
 
 focus-follows-mouse = true
 
