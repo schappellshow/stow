@@ -1,3 +1,9 @@
+# Add Netdata to PATH
+export PATH="/opt/netdata/bin:$PATH"
+
+# Netdata CLI alias for easier access
+alias netdata-cli="sudo /opt/netdata/bin/netdatacli"
+
 # Remove kitty socket only if it exists but Kitty is NOT responding to it
 if [ -S /tmp/kitty.socket ] && ! kitty @ --to unix:/tmp/kitty.socket ls >/dev/null 2>&1; then
     rm -f /tmp/kitty.socket
