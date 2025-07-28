@@ -1,14 +1,3 @@
-# Add Netdata to PATH
-export PATH="/opt/netdata/bin:$PATH"
-
-# Netdata CLI alias for easier access
-alias netdata-cli="sudo /opt/netdata/bin/netdatacli"
-
-# Remove kitty socket only if it exists but Kitty is NOT responding to it
-if [ -S /tmp/kitty.socket ] && ! kitty @ --to unix:/tmp/kitty.socket ls >/dev/null 2>&1; then
-    rm -f /tmp/kitty.socket
-fi
-
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH
 
@@ -107,10 +96,6 @@ source $ZSH/oh-my-zsh.sh
 # fastfetch
 fastfetch --kitty-direct /home/mike/Pictures/Logo/OM_Logo3.png
 
-# bun
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
 # bat
 BAT_THEME="base16"
 
@@ -141,4 +126,3 @@ eval "$(zoxide init zsh)"
 eval "$(zoxide init --cmd cd zsh)"
 . "$HOME/.cargo/env"
 
-# This is just an additional line to test my GPG key #
