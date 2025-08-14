@@ -126,3 +126,6 @@ eval "$(zoxide init zsh)"
 eval "$(zoxide init --cmd cd zsh)"
 . "$HOME/.cargo/env"
 
+export PATH="$HOME/AppImages:$PATH"
+export PATH="/opt/splunk/bin:$PATH"
+

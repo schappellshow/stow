@@ -41,3 +41,9 @@ alias mfbat='micro $(fzf --preview "bat --color=always --style=numbers --line-ra
 
 #trash-cli
 alias rm="trash-put"
+
+#Cursor CLI
+alias ca="cursor-agent"
+
+#Splunk
+alias splunk="sudo /opt/splunk/bin/splunk"
