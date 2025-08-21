@@ -124,7 +124,7 @@ export FZF_DEFAULT_OPTS="--layout=reverse --border=bold --border=rounded --margi
 eval "$(zoxide init zsh)"
 
 eval "$(zoxide init --cmd cd zsh)"
-. "$HOME/.cargo/env"
+# . "$HOME/.cargo/env"
 
 export PATH="$HOME/AppImages:$PATH"
 export PATH="/opt/splunk/bin:$PATH"

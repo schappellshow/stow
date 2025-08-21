@@ -181,12 +181,12 @@ ${voffset 4}     1  -  ${top_mem name 1}${alignr}${goto 170} ${goto 222}${top_me
      5  -  ${top_mem name 5}${alignr}${goto 170} ${goto 222}${top_mem cpu 5} ${goto 274}${top_mem mem 5}
      6  -  ${top_mem name 6}${alignr}${goto 170} ${goto 222}${top_mem cpu 6} ${goto 274}${top_mem mem 6}
 ${voffset 4}${color5}${font Roboto:size=10} D R I V E S   ${hr 2}${font}${color}
-${color2}Internal SSD:${color} ${alignr}${offset -10}${fs_used /} / ${fs_size /}${alignr}${fs_bar}
-${color2}I/O Read:${color} ${alignr}${offset -10}${diskio_read /dev/sdc1}${alignr}${diskiograph_read sdc1 8,100}
-${color2}I/O Write:${color} ${alignr}${offset -10}${diskio_write /dev/sdc1}${alignr}${diskiograph_write sdc1 8,100}
-${color2}Back-Ups - HDD:${color} ${alignr}${offset -10}${fs_used /media/mike/HDD} / ${fs_size /media/mike/HDD}${alignr}${fs_bar}
-${color2}I/O Read:${color} ${alignr}${offset -10}${diskio_read /dev/sda1}${alignr}${diskiograph_read sda1 8,100}
-${color2}I/O Write:${color} ${alignr}${offset -10}${diskio_write /dev/sda1}${alignr}${diskiograph_write sda1 8,100}
+${color2}Root:${color} ${alignr}${offset -10}${fs_used /} / ${fs_size /}${alignr}${fs_bar}
+${color2}I/O Read:${color} ${alignr}${offset -10}${diskio_read /dev/sdc2}${alignr}${diskiograph_read sdc2 8,100}
+${color2}I/O Write:${color} ${alignr}${offset -10}${diskio_write /dev/sdc2}${alignr}${diskiograph_write sdc2 8,100}
+${color2}Home:${color} ${alignr}${offset -10}${fs_used /home/mike} / ${fs_size /home/mike}${alignr}${fs_bar}
+${color2}I/O Read:${color} ${alignr}${offset -10}${diskio_read /dev/sdc4}${alignr}${diskiograph_read sdc4 8,100}
+${color2}I/O Write:${color} ${alignr}${offset -10}${diskio_write /dev/sdc4}${alignr}${diskiograph_write sdc4 8,100}
 ${voffset 4}${color5}${font Roboto:size=10} N E T W O R K   ${hr 2}${font}${color}
 #${color2}WiFi IP Address: ${color} ${alignr}${offset -10$}${addrs wlp2s0}
 #${color2}WiFi Up:${color} ${alignr}${offset -10$}${upspeed wlp2s0}${alignr}${upspeedgraph wlp2s0 8,100}
