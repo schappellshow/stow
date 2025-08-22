@@ -86,3 +86,7 @@ matches:
   - trigger: ":brow"
     replace: "🤨"
 
+  - trigger: ":think"
+    replace: "🤔"
+
+
