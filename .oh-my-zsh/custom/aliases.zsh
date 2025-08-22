@@ -9,7 +9,7 @@ alias la="ls -a"
 alias lla="ls -la"
 
 #DNF5
-#alias dnf="dnf5" && alias sudo="sudo "
+alias dnf="dnf5" && alias sudo="sudo "
 
 #Upgrade system
 alias dsync="~/.local/bin/update.sh"
