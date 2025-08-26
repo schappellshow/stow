@@ -196,9 +196,9 @@ ${color5}${color5}${font Roboto:size=10}N E T W O R K   ${hr 2}${font}${color}
 ${color2}WiFi IP Address: ${color} ${alignr}${offset -10$}${addrs wlo1}
 ${color2}WiFi Up:${color} ${alignr}${offset -10$}${upspeed wlo1}${alignr}${upspeedgraph wlo1 8,100}
 ${color2}WiFi Down:${color} ${alignr}${offset -10$}${downspeed wlo1}${alignr}${downspeedgraph wlo1 8,100}
-${color2}Eth IP Address: ${color} ${alignr}${offset -10$}${addrs enp0s20f0u1}
-${color2}Eth Up:${color} ${alignr}${offset -10$}${upspeed enp0s20f0u1}${alignr}${upspeedgraph enp0s20f0u1 8,100}
-${color2}Eth Down:${color} ${alignr}${offset -10$}${downspeed enp0s20f0u1}${alignr}${downspeedgraph enp0s20f0u1 8,100}
+#${color2}Eth IP Address: ${color} ${alignr}${offset -10$}${addrs enp0s20f0u1}
+#${color2}Eth Up:${color} ${alignr}${offset -10$}${upspeed enp0s20f0u1}${alignr}${upspeedgraph enp0s20f0u1 8,100}
+#${color2}Eth Down:${color} ${alignr}${offset -10$}${downspeed enp0s20f0u1}${alignr}${downspeedgraph enp0s20f0u1 8,100}
 #${font Roboto:size=10}N V I D I A   ${hr 2}${font}
 #${font Roboto:size=10:bold}${color5}${execp  nvidia-smi --query-supported-clocks=gpu_name --format=csv,noheader}${font}
 #${font StyleBats:size=20}u${font}${offset 8}${voffset -12}GPU Temp ${alignr}${execi 60 nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader} °C
