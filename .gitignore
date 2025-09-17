@@ -1,0 +1,19 @@
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore editor files
+*~
+.*.swp
+.*.swo
+*~
+
+# Ignore backup files
+*.bak
+*.backup
+*.orig
+
+# Ignore temporary files
+*.tmp
+*.temp
+
