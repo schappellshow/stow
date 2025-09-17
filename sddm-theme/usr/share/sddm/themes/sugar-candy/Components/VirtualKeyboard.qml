@@ -31,4 +31,3 @@ InputPanel {
     active: activated && Qt.inputMethod.visible
     visible: active
 }
-

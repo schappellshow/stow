@@ -238,6 +238,7 @@ Pane {
             fillMode: config.ScaleImageCropped == "true" ? Image.PreserveAspectCrop : Image.PreserveAspectFit
             asynchronous: true
             cache: true
+            clip: true
             mipmap: true
         }
 
@@ -271,4 +272,3 @@ Pane {
         }
     }
 }
-

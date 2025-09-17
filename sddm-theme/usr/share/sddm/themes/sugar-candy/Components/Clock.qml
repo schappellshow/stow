@@ -74,4 +74,3 @@ Column {
         timeLabel.updateTime()
     }
 }
-
