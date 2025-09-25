@@ -31,7 +31,7 @@ Column {
     id: inputContainer
     Layout.fillWidth: true
 
-    property Control exposeSession: sessionSelect.exposeSession
+    property alias exposeSession: sessionSelect.exposeSession
     property bool failed
 
     Item {
@@ -562,8 +562,8 @@ Column {
 
     Connections {
         target: sddm
-        onLoginSucceeded: {}
-        onLoginFailed: {
+        function onLoginSucceeded() {}
+        function onLoginFailed() {
             failed = true
             resetError.running ? resetError.stop() && resetError.start() : resetError.start()
         }
