@@ -89,7 +89,7 @@ matches:
   - trigger: ":think"
     replace: "🤔"
 
-  - trigger: ":greet"
+  - trigger: ":greet1"
     replace: "Hey {name}!"
 
   - trigger: ":greetmon"
