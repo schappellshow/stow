@@ -32,7 +32,7 @@ alias ll="ls -la"
 #alias dnf="dnf5" && alias sudo="sudo "
 
 #Upgrade system
-alias dsync="sudo dnf clean all ; dnf clean all ; sudo dnf upgrade; flatpak update; cargo install-update -a"
+#alias dsync="sudo dnf clean all ; dnf clean all ; sudo dnf upgrade; flatpak update; cargo install-update -a"
 
 #History or latest installed packages
 alias dhist="rpm -qa --last |less"

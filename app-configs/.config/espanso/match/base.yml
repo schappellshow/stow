@@ -89,19 +89,18 @@ matches:
   - trigger: ":think"
     replace: "🤔"
 
-  - trigger: ":greet1"
+  - trigger: ":g1"
     replace: "Hey {name}!"
 
-  - trigger: ":greetmon"
+  - trigger: ":gmon"
     replace: "Hey {name}! Happy Monday!"    
 
-  - trigger: ":greetfri"
+  - trigger: ":gfri"
     replace: "Hey {name}! Happy Friday!"
 
-  - trigger: ":greetwend"
+  - trigger: ":gwend"
     replace: "Hey {name}! I hope you had a great weekend!"
 
-  - trigger: ":greetweek"
+  - trigger: ":gweek"
     replace: "Hey {name}! I hope you've had a great week so far!"
 
-      
