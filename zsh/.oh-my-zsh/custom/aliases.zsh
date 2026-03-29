@@ -40,7 +40,7 @@ alias nfbat='nvim $(fzf --preview "bat --color=always --style=numbers --line-ran
 alias mfbat='micro $(fzf --preview "bat --color=always --style=numbers --line-range=:500 {}")'
 
 #trash-cli
-alias rm="trash-put"
+#alias rm="trash-put"
 
 #Cursor CLI
 alias ca="cursor-agent"
