@@ -47,3 +47,6 @@ alias ca="cursor-agent"
 
 #Splunk
 alias splunk="sudo /opt/splunk/bin/splunk"
+
+# SideStore VPN
+alias sidestore="/home/mike/.local/bin/sidestore.sh"

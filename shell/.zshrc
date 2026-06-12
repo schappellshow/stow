@@ -129,3 +129,9 @@ eval "$(zoxide init --cmd cd zsh)"
 export PATH="$HOME/AppImages:$PATH"
 export PATH="/opt/splunk/bin:$PATH"
 
+# SideStore VPN
+export TS_AUTHKEY=$(cat ~/.config/sidestore/ts_authkey)
+
+autoload bashcompinit
+bashcompinit
+source "/home/mike/.local/share/bash-completion/completions/am"
