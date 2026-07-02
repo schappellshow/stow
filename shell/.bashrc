@@ -66,8 +66,7 @@ alias ls='"lsd"'
 
 eval "$(zoxide init --cmd cd bash)"
 
-#. "$HOME/.cargo/env"
-
+#
 
 # Rust/Cargo environment settings
 if [ -f "$HOME/.cargo/env" ]; then

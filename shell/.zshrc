@@ -1,5 +1,5 @@
 # If you come from bash you might have to change your $PATH.
-export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH
+export PATH=$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH
 
 # Path to your Oh My Zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
@@ -124,7 +124,6 @@ export FZF_DEFAULT_OPTS="--layout=reverse --border=bold --border=rounded --margi
 eval "$(zoxide init zsh)"
 
 eval "$(zoxide init --cmd cd zsh)"
-# . "$HOME/.cargo/env"
 
 export PATH="$HOME/AppImages:$PATH"
 export PATH="/opt/splunk/bin:$PATH"
