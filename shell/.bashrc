@@ -5,8 +5,6 @@ if [ -f /etc/bashrc ]; then
     . /etc/bashrc
 fi
 
-export PATH="$HOME/.cargo/bin:$PATH"
-
 export PATH="$HOME/.local/bin:$PATH"
 
 #fastfetch --kitty-direct /home/mike/Pictures/Logo/openmandriva-logo1.png
@@ -65,14 +63,3 @@ alias ls='"lsd"'
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 eval "$(zoxide init --cmd cd bash)"
-
-#
-
-# Rust/Cargo environment settings
-if [ -f "$HOME/.cargo/env" ]; then
-    source "$HOME/.cargo/env"
-fi
-
-# Cargo linker configuration for OpenMandriva
-export RUSTFLAGS="-C link-arg=-fuse-ld=bfd"
-export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=gcc
