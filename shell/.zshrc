@@ -119,18 +119,15 @@ export FZF_DEFAULT_OPTS="--layout=reverse --border=bold --border=rounded --margi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-# zoxide
-
-eval "$(zoxide init zsh)"
-
-eval "$(zoxide init --cmd cd zsh)"
-
 export PATH="$HOME/AppImages:$PATH"
 export PATH="/opt/splunk/bin:$PATH"
 
-# SideStore VPN
-export TS_AUTHKEY=$(cat ~/.config/sidestore/ts_authkey)
+# SideStore VPN (only on machines that have the authkey)
+[ -f ~/.config/sidestore/ts_authkey ] && export TS_AUTHKEY=$(cat ~/.config/sidestore/ts_authkey)
 
 autoload bashcompinit
 bashcompinit
 source "/home/mike/.local/share/bash-completion/completions/am"
+
+# zoxide — must stay at the end of this file (it wraps cd)
+eval "$(zoxide init --cmd cd zsh)"
