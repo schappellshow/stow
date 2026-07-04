@@ -3,3 +3,4 @@ singleton Settings Settings.qml
 singleton AwesomeState AwesomeState.qml
 singleton NightLight NightLight.qml
 singleton Media Media.qml
+singleton SystemTheme SystemTheme.qml

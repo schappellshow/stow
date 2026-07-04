@@ -7,6 +7,10 @@ import "./notifications"
 import "./settings"
 
 ShellRoot {
+    // Enforce the saved dark/light mode on every system channel at startup;
+    // SystemTheme re-applies automatically whenever darkMode changes.
+    Component.onCompleted: SystemTheme.apply()
+
     Variants {
         model: Quickshell.screens
         Bar {}

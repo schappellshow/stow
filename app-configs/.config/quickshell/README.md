@@ -30,12 +30,14 @@ settings/                  the settings window (Super+Shift+s)
 
 ## Install (OpenMandriva)
 
+New machine: run `./install-desktop.sh` from the stow repo root — it
+installs all packages (quickshell, picom, rofi, gammastep, portals, fonts,
+...), stows the configs, fetches greenclip/rofimoji, and seeds the dark
+theme. Minimal manual equivalent:
+
 ```sh
 sudo dnf install quickshell quickshell-x11
 ```
-
-`gammastep` (night light) and `awesome-client` (part of awesome) are already
-present.
 
 ## IPC
 
@@ -47,6 +49,17 @@ qs ipc call theme toggle         # Super+Shift+t (dark/light)
 qs ipc call media toggle         # Super+a (media panel)
 qs ipc call media playPause
 ```
+
+## System-wide dark/light mode
+
+`common/SystemTheme.qml` runs `~/.local/bin/system-theme-apply` (from the
+`local` stow package) at shell startup and on every Super+Shift+t /
+settings-app toggle. That script pushes the mode to every channel apps use
+for the "system" theme: GSettings color-scheme/gtk-theme (read by the GTK
+portal backend, which answers Electron apps like Slack — see
+`.config/xdg-desktop-portal/portals.conf` for the routing), kdeglobals via
+plasma-apply-colorscheme (Qt/KDE apps), and xsettingsd + gtk settings.ini
+(GTK apps; files are created if missing, for fresh machines).
 
 ## Media player
 
