@@ -22,6 +22,11 @@ awful.spawn.with_shell(
 -- Wallpaper — northernlights.jpg; change path/filename as needed
 awful.spawn.with_shell("feh --bg-fill ~/Pictures/Wallpapers/blue_lake-OM.jpg")
 
+-- Quickshell: bar, notifications, settings app (config in ~/.config/quickshell)
+awful.spawn.with_shell(
+    "pgrep -x quickshell >/dev/null || pgrep -x qs >/dev/null || qs >/dev/null 2>&1 &"
+)
+
 -- Clipboard daemon (feeds Super+/ rofi clipboard picker)
 run_once({ "greenclip", "daemon" })
 

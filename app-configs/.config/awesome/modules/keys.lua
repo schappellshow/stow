@@ -42,8 +42,17 @@ M.globalkeys = gears.table.join(
         function() awful.spawn("rofimoji") end,
         { description = "emoji picker", group = "launcher" }),
     awful.key({ modkey, "Shift" }, "n",
-        function() awful.spawn("toggle-nightlight") end,
+        function() awful.spawn("qs ipc call nightlight toggle") end,
         { description = "toggle night light", group = "misc" }),
+    awful.key({ modkey, "Shift" }, "s",
+        function() awful.spawn("qs ipc call settings toggle") end,
+        { description = "shell settings", group = "misc" }),
+    awful.key({ modkey, "Shift" }, "t",
+        function() awful.spawn("qs ipc call theme toggle") end,
+        { description = "toggle dark/light mode", group = "misc" }),
+    awful.key({ modkey }, "a",
+        function() awful.spawn("qs ipc call media toggle") end,
+        { description = "media player panel", group = "media" }),
 
     -- ── Focus (directional, vim-style) ────────────────────────────────────
     awful.key({ modkey }, "h",

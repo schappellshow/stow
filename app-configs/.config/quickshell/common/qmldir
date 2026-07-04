@@ -1,0 +1,5 @@
+singleton Theme Theme.qml
+singleton Settings Settings.qml
+singleton AwesomeState AwesomeState.qml
+singleton NightLight NightLight.qml
+singleton Media Media.qml

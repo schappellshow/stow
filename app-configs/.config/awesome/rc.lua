@@ -1,5 +1,10 @@
 pcall(require, "luarocks.loader")
 
+-- Quickshell owns org.freedesktop.Notifications; stub out naughty's dbus
+-- module BEFORE naughty loads so awesome doesn't claim the name. naughty
+-- still renders internal errors (startup/runtime) directly.
+package.loaded["naughty.dbus"] = {}
+
 local gears     = require("gears")
 local awful     = require("awful")
 local beautiful = require("beautiful")
@@ -44,7 +49,7 @@ awful.layout.layouts = {
 }
 
 local keys      = require("modules.keys")
-local bar       = require("modules.bar")
+local qs_bridge = require("modules.quickshell")
 local _rules    = require("modules.rules")
 local _auto     = require("modules.autostart")
 
@@ -54,8 +59,11 @@ awful.screen.connect_for_each_screen(function(s)
         s,
         awful.layout.layouts[1]
     )
-    bar.setup(s)
 end)
+
+-- The bar itself is quickshell (spawned in autostart.lua); this feeds it
+-- tag/layout state.
+qs_bridge.setup()
 
 root.keys(keys.globalkeys)
 root.buttons(keys.rootbuttons)

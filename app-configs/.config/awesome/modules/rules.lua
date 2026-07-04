@@ -68,6 +68,18 @@ awful.rules.rules = {
         }
     },
 
+    -- Quickshell's normal windows (settings app) float centered. type=normal
+    -- keeps this off the bar, which is a dock window ("quickshell" is a Lua
+    -- pattern, so it also matches an "org.quickshell" class).
+    {
+        rule = { class = "quickshell", type = "normal" },
+        properties = {
+            floating          = true,
+            placement         = awful.placement.centered,
+            titlebars_enabled = false,
+        }
+    },
+
 }
 
 -- Titlebar builder — only fires when titlebars_enabled = true (dialogs)

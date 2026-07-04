@@ -1,4 +1,3 @@
-local theme_assets = require("beautiful.theme_assets")
 local xresources   = require("beautiful.xresources")
 local dpi          = xresources.apply_dpi
 local gfs          = require("gears.filesystem")
@@ -38,10 +37,9 @@ theme.taglist_font                 = "Hack Bold 9"
 theme.hotkeys_font                 = "Hack 10"
 theme.hotkeys_description_font     = "Hack 9"
 
--- Vertical bar dimensions
-theme.wibar_width  = dpi(42)
-theme.wibar_bg     = "#00000000"
-theme.wibar_fg     = om.text
+-- NOTE: the bar/taglist/notifications now live in quickshell
+-- (~/.config/quickshell); this theme only covers what awesome still draws:
+-- borders, gaps, titlebars, menu, hotkeys popup, and internal naughty errors.
 
 -- Window borders
 theme.border_width  = dpi(2)
@@ -57,34 +55,14 @@ theme.bg_normal   = om.base
 theme.bg_focus    = om.surface
 theme.bg_urgent   = om.red
 theme.bg_minimize = om.muted
-theme.bg_systray  = om.base
 
 theme.fg_normal   = om.subtext
 theme.fg_focus    = om.text
 theme.fg_urgent   = om.text
 theme.fg_minimize = om.muted
 
--- Taglist
-theme.taglist_bg_focus    = om.blue
-theme.taglist_fg_focus    = om.text
-theme.taglist_bg_occupied = om.surface
-theme.taglist_fg_occupied = om.subtext
-theme.taglist_bg_empty    = om.base
-theme.taglist_fg_empty    = om.muted
-theme.taglist_bg_urgent   = om.red
-theme.taglist_fg_urgent   = om.text
-theme.taglist_squares_sel   = nil   -- disabled; shape is handled via widget_template
-theme.taglist_squares_unsel = nil
-
--- Tasklist
-theme.tasklist_bg_normal = om.base
-theme.tasklist_fg_normal = om.subtext
-theme.tasklist_bg_focus  = om.surface
-theme.tasklist_fg_focus  = om.text
-theme.tasklist_bg_urgent = om.red
-theme.tasklist_fg_urgent = om.text
-
--- Notifications (naughty)
+-- Notifications (naughty — internal awesome errors only; regular
+-- notifications are handled by quickshell)
 theme.notification_font         = "Hack 10"
 theme.notification_bg           = om.surface
 theme.notification_fg           = om.text
@@ -126,18 +104,6 @@ theme.titlebar_maximized_button_focus_active     = themes_path.."default/titleba
 
 -- feh sets the wallpaper in autostart.lua
 theme.wallpaper = nil
-
--- Layout icons (use default theme's icons)
-theme.layout_tile      = themes_path.."default/layouts/tilew.png"
-theme.layout_tileleft  = themes_path.."default/layouts/tileleftw.png"
-theme.layout_dwindle   = themes_path.."default/layouts/dwindlew.png"
-theme.layout_fairv     = themes_path.."default/layouts/fairvw.png"
-theme.layout_max       = themes_path.."default/layouts/maxw.png"
-theme.layout_floating  = themes_path.."default/layouts/floatingw.png"
-
-theme.awesome_icon = theme_assets.awesome_icon(
-    theme.menu_height, theme.bg_focus, theme.fg_focus
-)
 
 -- Hotkeys popup
 theme.hotkeys_bg           = om.base
