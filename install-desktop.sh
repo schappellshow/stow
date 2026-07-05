@@ -22,11 +22,31 @@ info "Installing packages"
 sudo dnf install --allowerasing -y \
     awesome quickshell quickshell-x11 \
     picom rofi rofi-themes \
-    gammastep xsettingsd feh scrot playerctl \
+    xsettingsd feh scrot playerctl \
     xdg-desktop-portal xdg-desktop-portal-gtk plasma-workspace \
     ghostty micro \
     fonts-ttf-hack noto-sans-fonts \
-    stow git curl
+    stow git curl \
+    autoconf automake libtool slibtool gettext intltool pkgconf gcc make \
+    lib64x11-devel lib64xxf86vm-devel lib64xcb-devel lib64glib2.0-devel \
+    python-ensurepip
+
+info "gammastep (built from source; OMLx rolling repo's gammastep RPM is stale"
+info "and hard-requires python(abi)=3.11, which no longer exists in the repo)"
+if ! command -v gammastep >/dev/null 2>&1; then
+    build_dir="$(mktemp -d)"
+    git clone --depth 1 https://gitlab.com/chinstrap/gammastep.git "$build_dir"
+    (
+        cd "$build_dir"
+        ./bootstrap
+        ./configure --enable-randr --enable-vidmode --disable-gui
+        make -j"$(nproc)"
+        sudo make install
+    )
+    rm -rf "$build_dir"
+else
+    echo "  already installed"
+fi
 
 info "Stowing config packages (app-configs, local, pictures)"
 # --adopt is intentionally NOT used: a conflict means a real file is in the
@@ -51,7 +71,7 @@ fi
 
 info "rofimoji (emoji picker; not packaged for OMLx)"
 if ! command -v rofimoji >/dev/null 2>&1; then
-    if command -v pipx >/dev/null 2>&1; then
+    if command -v pipx >/dev/null 2>&1 && pipx --version >/dev/null 2>&1; then
         pipx install rofimoji
     else
         python3 -m pip install --user rofimoji
