@@ -4,3 +4,13 @@ singleton AwesomeState AwesomeState.qml
 singleton NightLight NightLight.qml
 singleton Media Media.qml
 singleton SystemTheme SystemTheme.qml
+singleton Audio Audio.qml
+singleton Brightness Brightness.qml
+singleton Network Network.qml
+singleton PowerEvents PowerEvents.qml
+singleton Wallpaper Wallpaper.qml
+singleton DisplayConfig DisplayConfig.qml
+singleton Keyboard Keyboard.qml
+singleton InputDevices InputDevices.qml
+singleton PowerConfig PowerConfig.qml
+singleton Autostart Autostart.qml

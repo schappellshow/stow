@@ -2,17 +2,45 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "../common"
+import "./components"
 
-// The "Settings app": a normal floating window (awesome rules float it),
-// toggled with `qs ipc call settings toggle` (Super+Shift+s).
+// The Settings app: sidebar navigation + lazily loaded pages, System
+// Settings style. Toggled with `qs ipc call settings toggle`
+// (Super+Shift+s); deep-link with `qs ipc call settings open <pageId>`.
 FloatingWindow {
     id: win
 
     title: "Shell Settings"
     visible: false
-    implicitWidth: 420
-    implicitHeight: 480
+    implicitWidth: 840
+    implicitHeight: 560
     color: Theme.base
+
+    property string currentPage: "appearance"
+
+    readonly property var pages: [
+        { id: "appearance",    title: "Appearance",    source: "pages/AppearancePage.qml" },
+        { id: "wallpaper",     title: "Wallpaper",     source: "pages/WallpaperPage.qml" },
+        { id: "bar",           title: "Bar",           source: "pages/BarPage.qml" },
+        { id: "nightlight",    title: "Night Light",   source: "pages/NightLightPage.qml" },
+        { id: "notifications", title: "Notifications", source: "pages/NotificationsPage.qml" },
+        { id: "display",       title: "Displays",      source: "pages/DisplayPage.qml" },
+        { id: "audio",         title: "Audio",         source: "pages/AudioPage.qml" },
+        { id: "network",       title: "Network",       source: "pages/NetworkPage.qml" },
+        { id: "bluetooth",     title: "Bluetooth",     source: "pages/BluetoothPage.qml" },
+        { id: "power",         title: "Power",         source: "pages/PowerPage.qml" },
+        { id: "keyboard",      title: "Keyboard",      source: "pages/KeyboardPage.qml" },
+        { id: "mouse",         title: "Mouse",         source: "pages/MousePage.qml" },
+        { id: "autostart",     title: "Autostart",     source: "pages/AutostartPage.qml" },
+        { id: "about",         title: "About",         source: "pages/AboutPage.qml" }
+    ]
+
+    function pageById(id) {
+        for (const p of pages)
+            if (p.id === id)
+                return p;
+        return pages[0];
+    }
 
     IpcHandler {
         target: "settings"
@@ -21,7 +49,9 @@ FloatingWindow {
             win.visible = !win.visible;
         }
 
-        function open(): void {
+        function open(page: string): void {
+            if (page !== "")
+                win.currentPage = win.pageById(page).id;
             win.visible = true;
         }
 
@@ -30,205 +60,87 @@ FloatingWindow {
         }
     }
 
-    component SectionLabel: Text {
-        font.family: Theme.fontFamily
-        font.bold: true
-        font.pointSize: 8
-        font.letterSpacing: 1.5
-        color: Theme.accentBright
-    }
+    Rectangle {
+        id: sidebar
 
-    component ToggleRow: Item {
-        property string label
-        property bool checked
-        signal toggled(bool value)
+        width: 190
+        height: parent.height
+        color: Theme.surfaceAlt
 
-        width: parent.width
-        height: 28
-
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: parent.label
-            font.family: Theme.fontFamily
-            font.pointSize: 10
-            color: Theme.text
-        }
-
-        Rectangle {
-            id: track
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: 44
-            height: 24
-            radius: 12
-            color: parent.checked ? Theme.accent : Theme.surface
-
-            Rectangle {
-                width: 18
-                height: 18
-                radius: 9
-                y: 3
-                x: track.parent.checked ? track.width - width - 3 : 3
-                color: Theme.text
-                Behavior on x {
-                    NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
-                }
-            }
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: parent.toggled(!parent.checked)
-        }
-    }
-
-    component SliderRow: Column {
-        id: sliderRow
-
-        property string label
-        property real from: 0
-        property real to: 100
-        property real step: 1
-        property real value
-        property string suffix: ""
-
-        signal moved(real value)
-
-        width: parent.width
-        spacing: 6
-
-        Item {
-            width: parent.width
-            height: labelText.implicitHeight
+        Column {
+            x: 10
+            y: 16
+            width: parent.width - 20
+            spacing: 2
 
             Text {
-                id: labelText
-                text: sliderRow.label
+                x: 8
+                text: "Settings"
                 font.family: Theme.fontFamily
-                font.pointSize: 10
+                font.bold: true
+                font.pointSize: 13
                 color: Theme.text
             }
 
-            Text {
-                anchors.right: parent.right
-                text: sliderRow.value + sliderRow.suffix
-                font.family: Theme.fontFamily
-                font.pointSize: 10
-                color: Theme.subtext
-            }
-        }
+            Item { width: 1; height: 10 }
 
-        Item {
-            width: parent.width
-            height: 20
+            Repeater {
+                model: win.pages
 
-            readonly property real ratio:
-                (sliderRow.value - sliderRow.from) / (sliderRow.to - sliderRow.from)
+                Rectangle {
+                    id: entry
 
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: 4
-                radius: 2
-                color: Theme.surface
-            }
+                    required property var modelData
 
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.ratio * parent.width
-                height: 4
-                radius: 2
-                color: Theme.accent
-            }
+                    readonly property bool current: win.currentPage === modelData.id
 
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                x: parent.ratio * (parent.width - width)
-                width: 14
-                height: 14
-                radius: 7
-                color: Theme.accentBright
-            }
+                    width: parent.width
+                    height: 30
+                    radius: 8
+                    color: current ? Theme.accent
+                         : entryHover.hovered ? Theme.surface : "transparent"
 
-            MouseArea {
-                anchors.fill: parent
-                function update(mouseX) {
-                    let r = Math.max(0, Math.min(1, mouseX / width));
-                    let v = sliderRow.from + r * (sliderRow.to - sliderRow.from);
-                    v = Math.round(v / sliderRow.step) * sliderRow.step;
-                    sliderRow.moved(v);
-                }
-                onPressed: mouseEvent => update(mouseEvent.x)
-                onPositionChanged: mouseEvent => {
-                    if (pressed)
-                        update(mouseEvent.x);
+                    Text {
+                        x: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: entry.modelData.title
+                        font.family: Theme.fontFamily
+                        font.pointSize: 10
+                        color: entry.current ? Theme.text : Theme.subtext
+                    }
+
+                    HoverHandler { id: entryHover }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: win.currentPage = entry.modelData.id
+                    }
                 }
             }
         }
-    }
-
-    Column {
-        anchors.fill: parent
-        anchors.margins: 20
-        spacing: 14
 
         Text {
-            text: "Shell Settings"
+            x: 18
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 12
+            width: parent.width - 36
+            text: Settings.path
+            wrapMode: Text.WrapAnywhere
             font.family: Theme.fontFamily
-            font.bold: true
-            font.pointSize: 14
-            color: Theme.text
-        }
-
-        Rectangle { width: parent.width; height: 1; color: Theme.surface }
-
-        SectionLabel { text: "APPEARANCE" }
-
-        ToggleRow {
-            label: "Dark mode"
-            checked: Settings.darkMode
-            onToggled: value => Settings.darkMode = value
-        }
-
-        SectionLabel { text: "NIGHT LIGHT" }
-
-        ToggleRow {
-            label: "Enabled"
-            checked: Settings.nightLightEnabled
-            onToggled: value => Settings.nightLightEnabled = value
-        }
-
-        SliderRow {
-            label: "Temperature"
-            from: 1500
-            to: 4500
-            step: 100
-            suffix: "K"
-            value: Settings.nightLightTemp
-            onMoved: value => Settings.nightLightTemp = value
-        }
-
-        SectionLabel { text: "BAR" }
-
-        SliderRow {
-            label: "Bar width"
-            from: 28
-            to: 48
-            step: 2
-            suffix: "px"
-            value: Settings.barWidth
-            onMoved: value => Settings.barWidth = value
-        }
-
-        Item { width: 1; height: 6 }
-
-        Text {
-            width: parent.width
-            text: "Settings persist to " + Settings.path
-            wrapMode: Text.Wrap
-            font.family: Theme.fontFamily
-            font.pointSize: 7
+            font.pointSize: 6
             color: Theme.muted
         }
+    }
+
+    Loader {
+        anchors.left: sidebar.right
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+
+        // Pages probe the system (xrandr, ls, ...) on load, so only build
+        // while the window is open
+        active: win.visible
+        source: win.pageById(win.currentPage).source
     }
 }

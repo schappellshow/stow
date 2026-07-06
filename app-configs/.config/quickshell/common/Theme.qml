@@ -27,8 +27,11 @@ Singleton {
     readonly property color gold:       "#dac040"
     readonly property color brightBlue: "#40a5da"   // secondary accent / focus
 
-    readonly property color accent:       blue
-    readonly property color accentBright: brightBlue
+    // Accent follows Settings; the stock OM blue keeps its hand-picked
+    // bright variant, other accents derive theirs.
+    readonly property color accent:       Settings.accentColor
+    readonly property color accentBright: Qt.colorEqual(accent, blue)
+                                            ? brightBlue : Qt.lighter(accent, 1.25)
     readonly property color urgent:       red
 
     readonly property string fontFamily: "Hack"

@@ -43,7 +43,7 @@ PanelWindow {
             anchors.top: tagPill.visible ? tagPill.bottom : parent.top
             anchors.topMargin: tagPill.visible ? 6 : 8
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: Media.active !== null
+            visible: Media.active !== null && Settings.showMediaPill
             padV: 5
 
             Item {
@@ -74,10 +74,18 @@ PanelWindow {
         }
 
         Pill {
+            id: clockPill
             anchors.centerIn: parent
             padH: 6
 
             ClockStack {}
+        }
+
+        // Click the clock for the calendar (Pill routes children into its
+        // column, so the MouseArea overlays it from outside)
+        MouseArea {
+            anchors.fill: clockPill
+            onClicked: bar.calendarOpen = !bar.calendarOpen
         }
 
         Pill {
@@ -88,19 +96,49 @@ PanelWindow {
 
             TrayColumn {
                 barWindow: bar
+                visible: Settings.showTray
             }
+
+            VolumeWidget { id: volumeWidget }
+
+            NetworkWidget { id: networkWidget }
+
+            BluetoothWidget { id: bluetoothWidget }
 
             Battery {}
 
             LayoutBox {
+                visible: Settings.showLayoutBox
                 screenIndex: bar.awScreen ? bar.awScreen.index : 1
                 layoutName: bar.awScreen ? bar.awScreen.layout : ""
             }
         }
     }
 
+    property bool calendarOpen: false
+
     MediaPanel {
         barWindow: bar
         anchorItem: mediaPill
+    }
+
+    CalendarPopup {
+        barWindow: bar
+        anchorItem: clockPill
+        shown: bar.calendarOpen
+    }
+
+    NetworkPanel {
+        barWindow: bar
+        anchorItem: networkWidget
+        shown: networkWidget.panelOpen
+        onDismiss: networkWidget.panelOpen = false
+    }
+
+    BluetoothPanel {
+        barWindow: bar
+        anchorItem: bluetoothWidget
+        shown: bluetoothWidget.panelOpen
+        onDismiss: bluetoothWidget.panelOpen = false
     }
 }

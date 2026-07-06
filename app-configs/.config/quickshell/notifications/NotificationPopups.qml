@@ -23,6 +23,7 @@ Scope {
         id: win
 
         visible: server.trackedNotifications.values.length > 0
+              && !Settings.doNotDisturb
 
         anchors {
             top: true
@@ -105,7 +106,8 @@ Scope {
 
                     Timer {
                         interval: card.modelData.expireTimeout > 0
-                                ? card.modelData.expireTimeout : 6000
+                                ? card.modelData.expireTimeout
+                                : Settings.notifTimeoutMs
                         running: true
                         onTriggered: card.modelData.expire()
                     }

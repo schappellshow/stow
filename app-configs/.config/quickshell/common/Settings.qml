@@ -6,13 +6,61 @@ import Quickshell.Io
 // Persistent shell settings. Stored outside the stow repo in quickshell's
 // per-shell state dir (~/.local/state/quickshell/by-shell/...) so runtime
 // changes never dirty the config repo.
+//
+// This file is the source of truth for everything the Settings app manages;
+// effects are applied by singletons watching these properties (SystemTheme,
+// NightLight, Wallpaper, Keyboard, PowerConfig, ...).
 Singleton {
     id: root
 
+    // Appearance
     property alias darkMode: adapter.darkMode
+    property alias accentColor: adapter.accentColor
+    property alias iconTheme: adapter.iconTheme
+
+    // Wallpaper
+    property alias wallpaperPath: adapter.wallpaperPath
+
+    // Night light
     property alias nightLightEnabled: adapter.nightLightEnabled
     property alias nightLightTemp: adapter.nightLightTemp
+
+    // Bar
     property alias barWidth: adapter.barWidth
+    property alias barScreen: adapter.barScreen
+    property alias showMediaPill: adapter.showMediaPill
+    property alias showTray: adapter.showTray
+    property alias showBattery: adapter.showBattery
+    property alias showLayoutBox: adapter.showLayoutBox
+    property alias showNetwork: adapter.showNetwork
+    property alias showBluetooth: adapter.showBluetooth
+    property alias showVolume: adapter.showVolume
+
+    // Notifications
+    property alias notifTimeoutMs: adapter.notifTimeoutMs
+    property alias doNotDisturb: adapter.doNotDisturb
+
+    // Displays (xrandr args, replayed at login)
+    property alias displayCmd: adapter.displayCmd
+
+    // Keyboard ("" = leave system layout alone; "us" or "us:intl")
+    property alias kbLayout: adapter.kbLayout
+    property alias kbRepeatDelay: adapter.kbRepeatDelay
+    property alias kbRepeatRate: adapter.kbRepeatRate
+
+    // Mouse / touchpad (libinput via xinput)
+    property alias mouseAccel: adapter.mouseAccel
+    property alias naturalScroll: adapter.naturalScroll
+    property alias tapToClick: adapter.tapToClick
+
+    // Power (0 = never)
+    property alias blankMinutes: adapter.blankMinutes
+    property alias dpmsMinutes: adapter.dpmsMinutes
+    property alias batteryWarnPct: adapter.batteryWarnPct
+    property alias batteryCriticalPct: adapter.batteryCriticalPct
+
+    // Autostart: [{ command: string, enabled: bool }]
+    property alias autostartExtra: adapter.autostartExtra
 
     readonly property string path: Quickshell.statePath("settings.json")
 
@@ -30,9 +78,46 @@ Singleton {
         JsonAdapter {
             id: adapter
             property bool darkMode: true
+            property string accentColor: "#2080bb"
+            property string iconTheme: ""
+
+            // "~" expands against $HOME at apply time (portable across machines)
+            property string wallpaperPath: "~/Pictures/Wallpapers/blue_lake-OM.jpg"
+
             property bool nightLightEnabled: false
             property int nightLightTemp: 3000
+
             property int barWidth: 36
+            // Output name (e.g. "DisplayPort-2") for a single bar;
+            // "" or an unplugged output falls back to bars on every screen
+            property string barScreen: ""
+            property bool showMediaPill: true
+            property bool showTray: true
+            property bool showBattery: true
+            property bool showLayoutBox: true
+            property bool showNetwork: true
+            property bool showBluetooth: true
+            property bool showVolume: true
+
+            property int notifTimeoutMs: 6000
+            property bool doNotDisturb: false
+
+            property string displayCmd: ""
+
+            property string kbLayout: ""
+            property int kbRepeatDelay: 400
+            property int kbRepeatRate: 40
+
+            property real mouseAccel: 0
+            property bool naturalScroll: false
+            property bool tapToClick: true
+
+            property int blankMinutes: 10
+            property int dpmsMinutes: 15
+            property int batteryWarnPct: 15
+            property int batteryCriticalPct: 5
+
+            property var autostartExtra: []
         }
     }
 }

@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# lock-screen — themed locker wrapper, called by xss-lock (idle + before
+# suspend) and `loginctl lock-session` / Ctrl+Alt+L.
+# Swap lockers here without touching keybinds or xss-lock.
+#
+# -n (no fork) is required: xss-lock holds the systemd sleep inhibitor until
+# this process exits, guaranteeing the screen is locked before suspend.
+
+# OpenMandriva palette — keep in sync with quickshell/common/Theme.qml
+BASE=232627ff
+TEXT=ffffffff
+SUBTEXT=afb3bdff
+ACCENT=2080bbff
+BRIGHT=40a5daff
+RED=cc2263ff
+GREEN=40da76ff
+CLEAR=00000000
+
+# i3lock-color ships as /usr/bin/i3lock on OMLx; fall back to plain flags if
+# the installed i3lock is the colorless original.
+if i3lock --help 2>&1 | grep -q -- '--ring-color'; then
+    exec i3lock -n \
+        --color="$BASE" \
+        --clock --force-clock \
+        --time-color="$TEXT" --time-str='%H:%M' --time-font='Hack' --time-size=42 \
+        --date-color="$SUBTEXT" --date-str='%A %e %B' --date-font='Hack' --date-size=14 \
+        --radius=110 --ring-width=6 \
+        --inside-color="$CLEAR" --ring-color="$ACCENT" \
+        --insidever-color="$CLEAR" --ringver-color="$GREEN" \
+        --insidewrong-color="$CLEAR" --ringwrong-color="$RED" \
+        --line-uses-inside \
+        --keyhl-color="$BRIGHT" --bshl-color="$RED" --separator-color="$CLEAR" \
+        --verif-color="$TEXT" --wrong-color="$TEXT" --modif-color="$TEXT" \
+        --verif-text='verifying…' --wrong-text='wrong' --noinput-text='' \
+        --ind-pos='x+w/2:y+h/2'
+else
+    exec i3lock -n -c "${BASE%??}"
+fi

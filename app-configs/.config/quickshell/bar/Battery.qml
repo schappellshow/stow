@@ -11,7 +11,7 @@ Column {
     readonly property int pct: present ? Math.round(device.percentage * 100) : 0
     readonly property bool charging: present && device.state === UPowerDeviceState.Charging
 
-    visible: present
+    visible: present && Settings.showBattery
     spacing: 1
 
     Text {

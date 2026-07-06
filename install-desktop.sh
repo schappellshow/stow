@@ -24,11 +24,14 @@ sudo dnf install --allowerasing -y \
     picom rofi rofi-themes \
     xsettingsd feh scrot playerctl \
     xdg-desktop-portal xdg-desktop-portal-gtk plasma-workspace \
+    lxqt-policykit i3lock-color brightnessctl \
+    pavucontrol-qt blueman networkmanager-applet \
     ghostty micro \
     fonts-ttf-hack noto-sans-fonts \
     stow git curl \
-    autoconf automake libtool slibtool gettext intltool pkgconf gcc make \
-    lib64x11-devel lib64xxf86vm-devel lib64xcb-devel lib64glib2.0-devel \
+    autoconf automake libtool slibtool gettext intltool pkgconf gcc make cmake \
+    lib64x11-devel lib64xxf86vm-devel lib64xcb-devel lib64xcb-util-devel \
+    lib64glib2.0-devel \
     python-ensurepip
 
 info "gammastep (built from source; OMLx rolling repo's gammastep RPM is stale"
@@ -42,6 +45,25 @@ if ! command -v gammastep >/dev/null 2>&1; then
         ./configure --enable-randr --enable-vidmode --disable-gui
         make -j"$(nproc)"
         sudo make install
+    )
+    rm -rf "$build_dir"
+else
+    echo "  already installed"
+fi
+
+info "xss-lock (built from source; not packaged for OMLx). Bridges the X"
+info "screensaver and systemd to the lock-screen script (idle lock, loginctl"
+info "lock-session, lock-before-suspend)."
+if ! command -v xss-lock >/dev/null 2>&1; then
+    build_dir="$(mktemp -d)"
+    git clone --depth 1 https://bitbucket.org/raymonad/xss-lock.git "$build_dir"
+    (
+        cd "$build_dir"
+        # Man pages need docbook2x, which OMLx lacks; skip that target
+        sed -i '/add_subdirectory(man)/d' CMakeLists.txt
+        cmake -DCMAKE_INSTALL_PREFIX=/usr/local -B build
+        make -C build -j"$(nproc)"
+        sudo make -C build install
     )
     rm -rf "$build_dir"
 else
@@ -92,6 +114,8 @@ Next steps:
   * Log out and pick the "awesome" session at the SDDM login screen.
   * Quickshell settings (dark mode, night light, bar width) live in
     ~/.local/state/quickshell/ and are controlled with Super+Shift+s.
+  * Session keys: Super+BackSpace = power menu, Ctrl+Alt+L = lock screen.
+    Idle lock kicks in at 10 minutes (xset s, set in awesome autostart).
   * Other stow packages (shell, zsh, conky, sddm-theme) are not stowed by
     this script; stow them individually if wanted: stow -R shell zsh
 EOF

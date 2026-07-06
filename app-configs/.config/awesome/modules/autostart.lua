@@ -19,8 +19,8 @@ awful.spawn.with_shell(
     "pkill -x xcompmgr; sleep 0.5 && picom --config ~/.config/picom/picom.conf --daemon"
 )
 
--- Wallpaper — northernlights.jpg; change path/filename as needed
-awful.spawn.with_shell("feh --bg-fill ~/Pictures/Wallpapers/blue_lake-OM.jpg")
+-- Wallpaper is quickshell's job now (Settings app → Wallpaper page;
+-- common/Wallpaper.qml runs feh from Settings.wallpaperPath at startup).
 
 -- Quickshell: bar, notifications, settings app (config in ~/.config/quickshell)
 awful.spawn.with_shell(
@@ -33,9 +33,18 @@ run_once({ "greenclip", "daemon" })
 -- xsettingsd propagates GTK/icon theme to running apps
 run_once({ "xsettingsd" })
 
--- Polkit authentication agent — uncomment whichever path exists on your system:
--- run_once({ "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1" })
--- run_once({ "/usr/libexec/polkit-gnome-authentication-agent-1" })
--- run_once({ "/usr/lib/xfce4/polkit-gnome-authentication-agent-1" })
+-- Polkit authentication agent (lxqt-policykit: Qt-native, no KDE deps)
+awful.spawn.with_shell(
+    "pgrep -u $USER -f lxqt-policykit-agent > /dev/null || /usr/libexec/lxqt-policykit-agent &"
+)
+
+-- Screen locking: xss-lock bridges X screensaver + systemd (loginctl
+-- lock-session, lock-before-suspend) to the lock-screen wrapper script.
+awful.spawn.with_shell(
+    "pgrep -u $USER -x xss-lock > /dev/null || xss-lock --transfer-sleep-lock -- lock-screen &"
+)
+
+-- Idle/DPMS timeouts are quickshell's job now (Settings app → Power page;
+-- common/PowerConfig.qml runs xset from settings at startup and on change).
 
 return {}

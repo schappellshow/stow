@@ -54,6 +54,14 @@ M.globalkeys = gears.table.join(
         function() awful.spawn("qs ipc call media toggle") end,
         { description = "media player panel", group = "media" }),
 
+    -- ── Session ────────────────────────────────────────────────────────────
+    awful.key({ modkey }, "BackSpace",
+        function() awful.spawn("qs ipc call power toggle") end,
+        { description = "power menu", group = "awesome" }),
+    awful.key({ "Control", "Mod1" }, "l",
+        function() awful.spawn("loginctl lock-session") end,
+        { description = "lock screen", group = "awesome" }),
+
     -- ── Focus (directional, vim-style) ────────────────────────────────────
     awful.key({ modkey }, "h",
         function() awful.client.focus.bydirection("left")  end,
@@ -136,23 +144,32 @@ M.globalkeys = gears.table.join(
     awful.key({ "Control" }, "Right",
         function() awful.spawn("playerctl next") end,
         { description = "next track", group = "media" }),
+    -- Volume goes through the shell (qs ipc) so the on-screen display fires
     awful.key({ "Control" }, "Up",
-        function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end,
+        function() awful.spawn("qs ipc call audio raise") end,
         { description = "volume up", group = "media" }),
     awful.key({ "Control" }, "Down",
-        function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end,
+        function() awful.spawn("qs ipc call audio lower") end,
         { description = "volume down", group = "media" }),
 
     -- Hardware volume/media keys (aliases)
     awful.key({ }, "XF86AudioRaiseVolume",
-        function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ +5%") end,
+        function() awful.spawn("qs ipc call audio raise") end,
         { description = "volume up", group = "media" }),
     awful.key({ }, "XF86AudioLowerVolume",
-        function() awful.spawn("pactl set-sink-volume @DEFAULT_SINK@ -5%") end,
+        function() awful.spawn("qs ipc call audio lower") end,
         { description = "volume down", group = "media" }),
     awful.key({ }, "XF86AudioMute",
-        function() awful.spawn("pactl set-sink-mute @DEFAULT_SINK@ toggle") end,
+        function() awful.spawn("qs ipc call audio muteToggle") end,
         { description = "mute", group = "media" }),
+
+    -- Backlight (no-op on machines without a backlight device)
+    awful.key({ }, "XF86MonBrightnessUp",
+        function() awful.spawn("qs ipc call brightness up") end,
+        { description = "brightness up", group = "media" }),
+    awful.key({ }, "XF86MonBrightnessDown",
+        function() awful.spawn("qs ipc call brightness down") end,
+        { description = "brightness down", group = "media" }),
     awful.key({ }, "XF86AudioPlay",
         function() awful.spawn("playerctl play-pause") end,
         { description = "play/pause", group = "media" }),

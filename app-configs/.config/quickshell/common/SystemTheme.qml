@@ -15,10 +15,20 @@ Singleton {
             Quickshell.env("HOME") + "/.local/bin/system-theme-apply",
             Settings.darkMode ? "dark" : "light"
         ]);
+        applyIcon();
+    }
+
+    function applyIcon() {
+        if (Settings.iconTheme !== "")
+            Quickshell.execDetached([
+                Quickshell.env("HOME") + "/.local/bin/icon-theme-apply",
+                Settings.iconTheme
+            ]);
     }
 
     Connections {
         target: Settings
         function onDarkModeChanged() { root.apply(); }
+        function onIconThemeChanged() { root.applyIcon(); }
     }
 }
