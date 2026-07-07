@@ -39,6 +39,10 @@ Singleton {
     property alias showBluetooth: adapter.showBluetooth
     property alias showVolume: adapter.showVolume
     property alias showNotifBell: adapter.showNotifBell
+    property alias showSysMon: adapter.showSysMon
+
+    // System monitor popout (conky)
+    property alias conkyConfig: adapter.conkyConfig
 
     // Notifications
     property alias notifTimeoutMs: adapter.notifTimeoutMs
@@ -108,6 +112,8 @@ Singleton {
             property bool showBluetooth: true
             property bool showVolume: true
             property bool showNotifBell: true
+            property bool showSysMon: true
+            property string conkyConfig: "~/.conky/titus_desktop.conkyrc"
 
             property int notifTimeoutMs: 6000
             property bool doNotDisturb: false

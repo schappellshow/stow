@@ -67,6 +67,15 @@ ShellRoot {
         }
     }
 
+    // `qs ipc call sysmon toggle` — Super+Shift+m in awesome (conky popout)
+    IpcHandler {
+        target: "sysmon"
+
+        function toggle(): void {
+            SysMon.toggleConky();
+        }
+    }
+
     // `qs ipc call notifs toggle` — Super+Shift+b in awesome
     IpcHandler {
         target: "notifs"

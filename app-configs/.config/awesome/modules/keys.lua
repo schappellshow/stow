@@ -64,6 +64,9 @@ M.globalkeys = gears.table.join(
     awful.key({ modkey, "Shift" }, "b",
         function() awful.spawn("qs ipc call notifs toggle") end,
         { description = "notification center", group = "misc" }),
+    awful.key({ modkey, "Shift" }, "m",
+        function() awful.spawn("qs ipc call sysmon toggle") end,
+        { description = "system monitor (conky)", group = "misc" }),
 
     -- ── Focus (directional, vim-style) ────────────────────────────────────
     awful.key({ modkey }, "h",

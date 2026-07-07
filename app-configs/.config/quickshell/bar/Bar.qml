@@ -107,6 +107,8 @@ PanelWindow {
 
             BluetoothWidget { id: bluetoothWidget }
 
+            SysMonWidget {}
+
             Battery {}
 
             LayoutBox {

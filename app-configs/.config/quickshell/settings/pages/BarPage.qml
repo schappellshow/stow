@@ -77,4 +77,32 @@ SettingsPage {
         checked: Settings.showLayoutBox
         onToggled: value => Settings.showLayoutBox = value
     }
+
+    SectionLabel { text: "SYSTEM MONITOR" }
+
+    ToggleRow {
+        label: "CPU/RAM pill"
+        checked: Settings.showSysMon
+        onToggled: value => Settings.showSysMon = value
+    }
+
+    TextFieldRow {
+        label: "Conky config for the popout (Enter to apply)"
+        text: Settings.conkyConfig
+        placeholder: "~/.conky/titus_desktop.conkyrc"
+        onAccepted: value => {
+            if (value !== "")
+                Settings.conkyConfig = value;
+        }
+    }
+
+    Text {
+        width: parent.width
+        text: "Click the CPU/RAM pill (or Super+Shift+M) to toggle the "
+            + "conky dashboard; right-click opens htop."
+        wrapMode: Text.Wrap
+        font.family: Theme.fontFamily
+        font.pointSize: 8
+        color: Theme.muted
+    }
 }

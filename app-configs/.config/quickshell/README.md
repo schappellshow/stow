@@ -69,6 +69,7 @@ qs ipc call audio muteToggle
 qs ipc call brightness up        # XF86MonBrightness keys (+ OSD)
 qs ipc call notifs toggle        # Super+Shift+b (notification center)
 qs ipc call notifs dnd           # toggle do-not-disturb
+qs ipc call sysmon toggle        # Super+Shift+m (conky dashboard popout)
 ```
 
 ## Session security

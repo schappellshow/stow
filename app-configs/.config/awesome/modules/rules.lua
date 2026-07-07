@@ -69,6 +69,22 @@ awful.rules.rules = {
         }
     },
 
+    -- Conky (own_window_type=normal in the theme): behave like a desktop
+    -- widget — float where conky places itself, no border, on every tag,
+    -- under other windows, never focused.
+    {
+        rule = { class = "Conky" },
+        properties = {
+            floating          = true,
+            border_width      = 0,
+            titlebars_enabled = false,
+            sticky            = true,
+            below             = true,
+            focusable         = false,
+            skip_taskbar      = true,
+        }
+    },
+
     -- Quickshell's normal windows (settings app) float centered. type=normal
     -- keeps this off the bar, which is a dock window ("quickshell" is a Lua
     -- pattern, so it also matches an "org.quickshell" class).
