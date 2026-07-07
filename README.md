@@ -1,172 +1,80 @@
-# Dotfiles and System Configuration
+# OpenMandriva Desktop Environment + Dotfiles
 
-This repository contains dotfiles and system configurations organized using GNU Stow packages for easy deployment across fresh OpenMandriva installations.
+A full desktop environment replacing KDE Plasma — **AwesomeWM** (X11, window
+management) + **Quickshell** (bar, notifications, Settings app, power menu,
+OSD) — plus dotfiles, all organized as GNU Stow packages for deployment
+across fresh OpenMandriva installations.
 
-## Structure
+## Quick start (fresh machine)
 
-This uses the traditional GNU Stow package structure, where each directory represents a logical package:
+```bash
+git clone git@github.com:schappellshow/stow.git ~/stow   # or https
+cd ~/stow && ./install-desktop.sh
+```
+
+Then log out and pick the **awesome** session at the SDDM login screen.
+
+`install-desktop.sh` installs every package the DE needs (dnf), builds the
+few tools OMLx doesn't ship (gammastep, xss-lock, xsecurelock), stows the
+config packages, and seeds the dark theme. It's idempotent — re-run it
+after every pull.
+
+## The desktop, in brief
+
+| Piece | What / where |
+|---|---|
+| Window manager | AwesomeWM — `app-configs/.config/awesome/` (tags, tiling, keybinds, rules) |
+| Shell layer | Quickshell — `app-configs/.config/quickshell/` (bar, widgets, notifications + history, Settings app, power menu, volume/brightness OSD, night light) |
+| Settings app | Super+Shift+S — 14 pages, writes one settings.json, replayed at login |
+| Locking | xss-lock → `lock-screen` wrapper (xsecurelock, i3lock-color fallback); Ctrl+Alt+L |
+| Launcher | rofi (Super+Space) + greenclip clipboard + rofimoji |
+| Compositor | picom · **Wallpaper**: feh, managed by Settings · **Screenshots**: flameshot (Print) |
+| Theming | Breeze dark/light everywhere via `system-theme-apply` + `icon-theme-apply` |
+
+Architecture details and every keybind/IPC command:
+`app-configs/.config/quickshell/README.md`.
+
+## Stow packages
 
 ```
 ~/stow/
-├── shell/           # Shell configurations (.bashrc, .zshrc)
-├── zsh/             # Zsh framework (.oh-my-zsh)
-├── app-configs/     # Application configs (.config directory)
-├── conky/           # Conky desktop widgets
-├── local/           # Local binaries (.local directory)
-├── pictures/        # Personal pictures and wallpapers
-└── sddm-theme/      # SDDM login theme (system-level)
+├── app-configs/     # ~/.config — awesome, quickshell, picom, rofi, kitty, ghostty, ...
+├── local/           # ~/.local — scripts (lock-screen, *-apply), .desktop entries
+├── pictures/        # ~/Pictures — wallpapers, OM logos
+├── shell/           # .bashrc, .zshrc
+├── zsh/             # Oh-My-Zsh customizations
+├── conky/           # Conky widget themes (+ conky-startup.sh)
+└── sddm-theme/      # SDDM Sugar Candy login theme (system-level, sudo)
 ```
 
-## Packages Overview
-
-### User-Level Packages
-- **shell**: Basic shell configurations (bash, zsh)
-- **zsh**: Oh-My-Zsh framework and customizations
-- **app-configs**: Application configurations (.config directory)
-  - Kitty terminal
-  - Ghostty terminal
-  - Fastfetch system info
-  - Micro editor
-  - Espanso text expander
-- **conky**: Desktop widget themes and configurations
-- **local**: Local user binaries and scripts
-- **pictures**: Personal images, logos, and wallpapers
-
-### System-Level Packages
-- **sddm-theme**: SDDM Sugar Candy login theme
-
-## Quick Installation (All Packages)
-
-For a complete setup on a fresh installation:
-
-```bash
-# Clone the repository
-git clone <your-repo-url> ~/stow
-
-# Install all user-level packages
-cd ~/stow
-stow shell zsh app-configs conky local pictures
-
-# Install system-level packages (requires sudo)
-sudo stow -t / sddm-theme
-
-# Configure SDDM to use the theme
-sudo tee /etc/sddm.conf << EOF
-[Theme]
-Current=sugar-candy
-EOF
-```
-
-## Selective Installation
-
-Install only specific packages as needed:
+`install-desktop.sh` stows `app-configs local pictures`. The rest are
+opt-in:
 
 ```bash
 cd ~/stow
-
-# Basic shell setup
-stow shell zsh
-
-# Application configurations
-stow app-configs
-
-# Desktop widgets
-stow conky
-
-# Personal files
-stow pictures
-
-# System theme (requires sudo)
-sudo stow -t / sddm-theme
+stow shell zsh conky            # user-level extras
+sudo stow -t / sddm-theme       # login theme, then set Current=sugar-candy
+                                # in /etc/sddm.conf [Theme]
 ```
 
-## Package Management
-
-### Installing a Package
-```bash
-cd ~/stow
-stow <package-name>
-```
-
-### Removing a Package
-```bash
-cd ~/stow
-stow -D <package-name>
-```
-
-### Updating a Package
-```bash
-cd ~/stow
-stow -R <package-name>  # Restow (remove and install)
-```
-
-## Fresh Installation Script
-
-For automated deployment, you can use this script pattern:
+## Managing packages
 
 ```bash
-#!/bin/bash
-set -e
-
-# Clone dotfiles
-git clone <your-repo-url> ~/stow
-
-# Install user packages
-cd ~/stow
-stow shell zsh app-configs conky local pictures
-
-# Install system packages
-sudo stow -t / sddm-theme
-
-# Configure SDDM
-if [ ! -f /etc/sddm.conf ]; then
-    sudo tee /etc/sddm.conf << EOF
-[Theme]
-Current=sugar-candy
-EOF
-else
-    sudo sed -i '/\[Theme\]/,/^\[/ s/Current=.*/Current=sugar-candy/' /etc/sddm.conf
-fi
-
-echo "Dotfiles installation complete!"
+stow <package>       # install (symlink into $HOME)
+stow -R <package>    # restow after changes
+stow -D <package>    # remove
+stow --simulate --verbose <package>   # dry run
 ```
 
-## Customization
-
-### Adding New Configurations
-
-1. Add files to the appropriate package directory
-2. If it's a new type of configuration, create a new package:
-   ```bash
-   mkdir ~/stow/new-package
-   # Add your files maintaining the home directory structure
-   ```
-
-### SDDM Theme Customization
-
-Edit theme files in the package:
-- Main config: `sddm-theme/usr/share/sddm/themes/sugar-candy/theme.conf`
-- User overrides: `sddm-theme/usr/share/sddm/themes/sugar-candy/theme.conf.user`
-
-Changes take effect immediately through the symlinks.
-
-## Testing
-
-Test package installation without making changes:
-```bash
-cd ~/stow
-stow --simulate --verbose <package-name>
-```
-
-## Requirements
-
-- GNU Stow
-- Git
-- sudo access (for system-level packages)
+Everything is symlinked, so edits in the repo are live immediately
+(quickshell hot-reloads; awesome reloads with Super+Ctrl+R).
 
 ## Notes
 
-- User packages install to your home directory
-- System packages require sudo and install to root filesystem
-- All configurations are symlinked, so changes in the repo are immediately active
-- This structure is compatible with standard stow workflows and tools
+- Shell/session state (settings.json) lives in `~/.local/state/quickshell/`,
+  deliberately **outside** this repo, so runtime changes never dirty git.
+- The Settings app is the intended way to change wallpaper, displays,
+  keyboard, power, etc. — config files rarely need hand-editing.
+- KDE-independence is a goal: the polkit agent is lxqt-policykit, and the
+  remaining KDE ties (Breeze themes, portal-kde, plasma-apply-colorscheme)
+  are isolated inside `system-theme-apply` for future replacement.

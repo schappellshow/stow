@@ -6,6 +6,8 @@ import "../common"
 // Freedesktop notification daemon + popup stack (top-right), styled like the
 // old naughty theme. Requires naughty's dbus module to be disabled in
 // awesome's rc.lua so quickshell can own org.freedesktop.Notifications.
+// Every notification is also copied into NotifHistory for the center panel;
+// do-not-disturb suppresses popups but history still records.
 Scope {
     id: root
 
@@ -13,9 +15,10 @@ Scope {
         id: server
         bodySupported: true
         actionsSupported: true
-        imageSupported: false
+        imageSupported: true
         onNotification: notification => {
             notification.tracked = true;
+            NotifHistory.add(notification);
         }
     }
 
@@ -51,19 +54,38 @@ Scope {
 
                     required property var modelData
 
+                    readonly property string iconSrc: NotifHistory.iconSource(
+                        modelData.image || "", modelData.appIcon || "")
+                    readonly property int textX: iconSrc !== "" ? 52 : 12
+
                     width: stack.width
-                    implicitHeight: body.y + body.implicitHeight + 12
+                    implicitHeight: Math.max(
+                        body.y + body.implicitHeight + 12,
+                        iconSrc !== "" ? 56 : 0)
                     radius: Theme.radius
                     color: Theme.surface
-                    border.color: Theme.accentBright
+                    border.color: card.modelData.urgency === NotificationUrgency.Critical
+                        ? Theme.urgent : Theme.accentBright
                     border.width: 2
                     opacity: 0.95
 
+                    Image {
+                        x: 12
+                        y: 12
+                        width: 32
+                        height: 32
+                        visible: card.iconSrc !== ""
+                        source: card.iconSrc
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true
+                        sourceSize.width: 64
+                    }
+
                     Text {
                         id: appName
-                        x: 12
+                        x: card.textX
                         y: 8
-                        width: parent.width - 24
+                        width: parent.width - card.textX - 12
                         text: card.modelData.appName || "notification"
                         elide: Text.ElideRight
                         font.family: Theme.fontFamily
@@ -73,9 +95,9 @@ Scope {
 
                     Text {
                         id: summary
-                        x: 12
+                        x: card.textX
                         y: appName.y + appName.implicitHeight + 2
-                        width: parent.width - 24
+                        width: parent.width - card.textX - 12
                         text: card.modelData.summary
                         elide: Text.ElideRight
                         font.family: Theme.fontFamily
@@ -86,9 +108,9 @@ Scope {
 
                     Text {
                         id: body
-                        x: 12
+                        x: card.textX
                         y: summary.y + summary.implicitHeight + (text.length > 0 ? 4 : 0)
-                        width: parent.width - 24
+                        width: parent.width - card.textX - 12
                         visible: text.length > 0
                         text: card.modelData.body
                         wrapMode: Text.Wrap

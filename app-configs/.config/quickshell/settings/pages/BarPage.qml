@@ -43,6 +43,12 @@ SettingsPage {
     }
 
     ToggleRow {
+        label: "Notification bell"
+        checked: Settings.showNotifBell
+        onToggled: value => Settings.showNotifBell = value
+    }
+
+    ToggleRow {
         label: "Volume"
         checked: Settings.showVolume
         onToggled: value => Settings.showVolume = value

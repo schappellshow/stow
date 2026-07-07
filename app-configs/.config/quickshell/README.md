@@ -23,6 +23,7 @@ bar/                       vertical left bar (taglist / clock / tray / widgets)
   VolumeWidget             VOL pill (scroll/mute/right-click mixer)
   CalendarPopup            month grid on clock click
 notifications/             org.freedesktop.Notifications daemon + popups
+  NotificationCenter.qml   history panel (Super+Shift+B / NTF bell in bar)
 settings/                  the Settings app (Super+Shift+s): sidebar + pages
   components/              ToggleRow, SliderRow, ComboRow, ... (shared rows)
   pages/                   Appearance, Wallpaper, Bar, Night Light,
@@ -66,14 +67,18 @@ qs ipc call power toggle         # Super+BackSpace (session menu)
 qs ipc call audio raise          # volume keys / Ctrl+Up|Down (+ OSD)
 qs ipc call audio muteToggle
 qs ipc call brightness up        # XF86MonBrightness keys (+ OSD)
+qs ipc call notifs toggle        # Super+Shift+b (notification center)
+qs ipc call notifs dnd           # toggle do-not-disturb
 ```
 
 ## Session security
 
 Locking is not quickshell's job: `xss-lock` (autostarted by awesome) runs
-the `lock-screen` wrapper (i3lock-color, from the `local` stow package) on
-idle (`xset s 600`), on `loginctl lock-session` (Ctrl+Alt+L), and before
-suspend via systemd's sleep inhibitor. The polkit auth agent is
+the `lock-screen` wrapper (from the `local` stow package) on idle (xset,
+Settings → Power page), on `loginctl lock-session` (Ctrl+Alt+L), and before
+suspend via systemd's sleep inhibitor. The wrapper prefers xsecurelock
+(login-style password prompt, source-built by install-desktop.sh) and falls
+back to i3lock-color's ring indicator. The polkit auth agent is
 lxqt-policykit (Qt, no KDE deps), also autostarted by awesome.
 
 ## System-wide dark/light mode

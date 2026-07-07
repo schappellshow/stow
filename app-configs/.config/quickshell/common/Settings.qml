@@ -24,6 +24,9 @@ Singleton {
     // Night light
     property alias nightLightEnabled: adapter.nightLightEnabled
     property alias nightLightTemp: adapter.nightLightTemp
+    property alias nightLightSchedule: adapter.nightLightSchedule
+    property alias nightLightStart: adapter.nightLightStart
+    property alias nightLightStop: adapter.nightLightStop
 
     // Bar
     property alias barWidth: adapter.barWidth
@@ -35,6 +38,7 @@ Singleton {
     property alias showNetwork: adapter.showNetwork
     property alias showBluetooth: adapter.showBluetooth
     property alias showVolume: adapter.showVolume
+    property alias showNotifBell: adapter.showNotifBell
 
     // Notifications
     property alias notifTimeoutMs: adapter.notifTimeoutMs
@@ -86,6 +90,11 @@ Singleton {
 
             property bool nightLightEnabled: false
             property int nightLightTemp: 3000
+            // Schedule is opt-in: off = night light is purely manual
+            // (Super+Shift+N / settings toggle)
+            property bool nightLightSchedule: false
+            property string nightLightStart: "21:00"
+            property string nightLightStop: "07:00"
 
             property int barWidth: 36
             // Output name (e.g. "DisplayPort-2") for a single bar;
@@ -98,6 +107,7 @@ Singleton {
             property bool showNetwork: true
             property bool showBluetooth: true
             property bool showVolume: true
+            property bool showNotifBell: true
 
             property int notifTimeoutMs: 6000
             property bool doNotDisturb: false

@@ -14,3 +14,4 @@ singleton Keyboard Keyboard.qml
 singleton InputDevices InputDevices.qml
 singleton PowerConfig PowerConfig.qml
 singleton Autostart Autostart.qml
+singleton NotifHistory NotifHistory.qml

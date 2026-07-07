@@ -22,7 +22,7 @@ info "Installing packages"
 sudo dnf install --allowerasing -y \
     awesome quickshell quickshell-x11 \
     picom rofi rofi-themes \
-    xsettingsd feh scrot playerctl \
+    xsettingsd feh scrot flameshot playerctl \
     xdg-desktop-portal xdg-desktop-portal-gtk plasma-workspace \
     lxqt-policykit i3lock-color brightnessctl \
     pavucontrol-qt blueman networkmanager-applet \
@@ -32,6 +32,8 @@ sudo dnf install --allowerasing -y \
     autoconf automake libtool slibtool gettext intltool pkgconf gcc make cmake \
     lib64x11-devel lib64xxf86vm-devel lib64xcb-devel lib64xcb-util-devel \
     lib64glib2.0-devel \
+    lib64pam-devel lib64xcomposite-devel lib64xext-devel lib64xfixes-devel \
+    lib64xft-devel lib64xmu-devel lib64xrandr-devel lib64xscrnsaver-devel \
     python-ensurepip
 
 info "gammastep (built from source; OMLx rolling repo's gammastep RPM is stale"
@@ -64,6 +66,26 @@ if ! command -v xss-lock >/dev/null 2>&1; then
         cmake -DCMAKE_INSTALL_PREFIX=/usr/local -B build
         make -C build -j"$(nproc)"
         sudo make -C build install
+    )
+    rm -rf "$build_dir"
+else
+    echo "  already installed"
+fi
+
+info "xsecurelock (built from source; not packaged for OMLx). Login-style"
+info "lock screen with a real password prompt; preferred by the lock-screen"
+info "wrapper, which falls back to i3lock-color if this isn't installed."
+if ! command -v xsecurelock >/dev/null 2>&1; then
+    pam_service=system-auth
+    [ -f /etc/pam.d/system-auth ] || pam_service=login
+    build_dir="$(mktemp -d)"
+    git clone --depth 1 https://github.com/google/xsecurelock.git "$build_dir"
+    (
+        cd "$build_dir"
+        sh autogen.sh
+        ./configure --prefix=/usr/local --with-pam-service-name="$pam_service"
+        make -j"$(nproc)"
+        sudo make install
     )
     rm -rf "$build_dir"
 else

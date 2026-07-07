@@ -37,6 +37,8 @@ ShellRoot {
 
     NotificationPopups {}
 
+    NotificationCenter {}
+
     SettingsWindow {}
 
     // Session menu — `qs ipc call power toggle`, bound to Super+BackSpace
@@ -62,6 +64,27 @@ ShellRoot {
         function muteToggle(): void {
             Audio.toggleMute();
             osd.showVolume();
+        }
+    }
+
+    // `qs ipc call notifs toggle` — Super+Shift+b in awesome
+    IpcHandler {
+        target: "notifs"
+
+        function toggle(): void {
+            NotifHistory.toggleCenter();
+        }
+
+        function close(): void {
+            NotifHistory.centerOpen = false;
+        }
+
+        function clearAll(): void {
+            NotifHistory.clear();
+        }
+
+        function dnd(): void {
+            Settings.doNotDisturb = !Settings.doNotDisturb;
         }
     }
 

@@ -61,6 +61,9 @@ M.globalkeys = gears.table.join(
     awful.key({ "Control", "Mod1" }, "l",
         function() awful.spawn("loginctl lock-session") end,
         { description = "lock screen", group = "awesome" }),
+    awful.key({ modkey, "Shift" }, "b",
+        function() awful.spawn("qs ipc call notifs toggle") end,
+        { description = "notification center", group = "misc" }),
 
     -- ── Focus (directional, vim-style) ────────────────────────────────────
     awful.key({ modkey }, "h",
@@ -130,9 +133,21 @@ M.globalkeys = gears.table.join(
     -- ── Screenshot ─────────────────────────────────────────────────────────
     -- "Print" covers both full keyboards and 60% boards where Fn+K → Print keycode.
     -- If your 60% sends a different keycode, run `xev` to find it and add it here.
+    -- flameshot preferred (region select + annotation); scrot as fallback.
     awful.key({ }, "Print",
-        function() awful.spawn("scrot '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/Screenshots/'") end,
-        { description = "screenshot", group = "misc" }),
+        function()
+            awful.spawn.with_shell(
+                "command -v flameshot >/dev/null && flameshot gui || " ..
+                "scrot '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/Screenshots/'")
+        end,
+        { description = "screenshot (region)", group = "misc" }),
+    awful.key({ "Shift" }, "Print",
+        function()
+            awful.spawn.with_shell(
+                "command -v flameshot >/dev/null && flameshot full -p ~/Pictures/Screenshots || " ..
+                "scrot '%Y-%m-%d_%H-%M-%S.png' -e 'mv $f ~/Pictures/Screenshots/'")
+        end,
+        { description = "screenshot (full)", group = "misc" }),
 
     -- ── Media controls ─────────────────────────────────────────────────────
     awful.key({ "Control" }, "space",

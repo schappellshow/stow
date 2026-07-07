@@ -99,6 +99,8 @@ PanelWindow {
                 visible: Settings.showTray
             }
 
+            NotifBell {}
+
             VolumeWidget { id: volumeWidget }
 
             NetworkWidget { id: networkWidget }
