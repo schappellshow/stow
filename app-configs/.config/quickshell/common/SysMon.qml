@@ -20,10 +20,20 @@ Singleton {
 
     function toggleConky() {
         const cfg = Wallpaper.expand(Settings.conkyConfig);
+        // Pop out hugging the bar: -a/-x/-y override the conkyrc's
+        // alignment/gap (which are tuned for the old always-on KDE setup),
+        // relative to the whole X screen — so offset by the bar screen's
+        // origin. Falls back to the first screen when barScreen is unset.
+        const match = Quickshell.screens.filter(
+            s => s.name === Settings.barScreen);
+        const scr = match.length > 0 ? match[0] : Quickshell.screens[0];
+        const x = (scr ? scr.x : 0) + Settings.barWidth + 8;
+        const y = (scr ? scr.y : 0) + 20;
         Quickshell.execDetached(["sh", "-c",
             "if pgrep -u $USER -x conky >/dev/null; then killall conky; " +
             "else cd \"$HOME/.conky\" 2>/dev/null; " +
-            "conky -c \"" + cfg + "\" >/dev/null 2>&1 & fi"]);
+            "conky -c \"" + cfg + "\" -a top_left -x " + x + " -y " + y +
+            " >/dev/null 2>&1 & fi"]);
         conkyRunning = !conkyRunning;
         confirm.restart();
     }

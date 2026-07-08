@@ -69,9 +69,11 @@ awful.rules.rules = {
         }
     },
 
-    -- Conky (own_window_type=normal in the theme): behave like a desktop
-    -- widget — float where conky places itself, no border, on every tag,
-    -- under other windows, never focused.
+    -- Conky (own_window_type=normal in the theme): a summon-on-demand
+    -- dashboard, not a desktop widget — float where the SYS pill places it
+    -- (hugging the bar), no border, on every tag, ABOVE other windows so
+    -- the keybind shows it over whatever you're doing, never focused.
+    -- ontop/below here override the conkyrc's 'below' window hint.
     {
         rule = { class = "Conky" },
         properties = {
@@ -79,9 +81,13 @@ awful.rules.rules = {
             border_width      = 0,
             titlebars_enabled = false,
             sticky            = true,
-            below             = true,
+            ontop             = true,
+            below             = false,
             focusable         = false,
             skip_taskbar      = true,
+            -- Keep the position conky was launched with (-x/-y from the
+            -- SYS pill); overrides the default rule's no_overlap placement
+            placement         = false,
         }
     },
 

@@ -99,7 +99,8 @@ SettingsPage {
     Text {
         width: parent.width
         text: "Click the CPU/RAM pill (or Super+Shift+M) to toggle the "
-            + "conky dashboard; right-click opens htop."
+            + "conky dashboard — it pops out beside the bar, above your "
+            + "windows, and toggles away again. Right-click opens htop."
         wrapMode: Text.Wrap
         font.family: Theme.fontFamily
         font.pointSize: 8
