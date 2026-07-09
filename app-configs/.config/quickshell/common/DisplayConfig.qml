@@ -9,7 +9,7 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    // [{ name, primary, x, y, currentMode, modes: [string] }]
+    // [{ name, primary, x, y, rotation, currentMode, modes: [string] }]
     property var outputs: []
 
     function init() {
@@ -21,14 +21,16 @@ Singleton {
         xrandrProc.running = true;
     }
 
-    // profile: { outputName: { mode, primary } }, missing entries keep current
+    // profile: { outputName: { mode, primary, rotate } }, missing entries
+    // keep current
     function apply(profile) {
         const args = [];
         for (const o of outputs) {
             const p = profile[o.name] || {};
             args.push("--output", o.name,
                 "--mode", p.mode || o.currentMode,
-                "--pos", o.x + "x" + o.y);
+                "--pos", o.x + "x" + o.y,
+                "--rotate", p.rotate || o.rotation);
             if (p.primary === true || (p.primary === undefined && o.primary))
                 args.push("--primary");
         }
@@ -55,7 +57,9 @@ Singleton {
         let cur = null;
         for (const line of t.split("\n")) {
             // "DisplayPort-2 connected primary 1920x1080+1080+0 (normal ...)"
-            let m = line.match(/^(\S+) (connected|disconnected)( primary)?( (\d+)x(\d+)\+(\d+)\+(\d+))?/);
+            // Rotated outputs carry the rotation before the paren list:
+            // "HDMI-A-0 connected 1080x1920+0+0 left (normal left ...)"
+            let m = line.match(/^(\S+) (connected|disconnected)( primary)?( (\d+)x(\d+)\+(\d+)\+(\d+))?( (left|right|inverted))?/);
             if (m) {
                 cur = null;
                 if (m[2] === "connected") {
@@ -64,6 +68,7 @@ Singleton {
                         primary: !!m[3],
                         x: m[7] !== undefined ? parseInt(m[7]) : 0,
                         y: m[8] !== undefined ? parseInt(m[8]) : 0,
+                        rotation: m[10] || "normal",
                         currentMode: "",
                         modes: []
                     };

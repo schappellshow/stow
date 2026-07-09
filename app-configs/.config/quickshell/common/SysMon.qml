@@ -21,14 +21,15 @@ Singleton {
     function toggleConky() {
         const cfg = Wallpaper.expand(Settings.conkyConfig);
         // Pop out hugging the bar: -a/-x/-y override the conkyrc's
-        // alignment/gap (which are tuned for the old always-on KDE setup),
-        // relative to the whole X screen — so offset by the bar screen's
-        // origin. Falls back to the first screen when barScreen is unset.
-        const match = Quickshell.screens.filter(
-            s => s.name === Settings.barScreen);
-        const scr = match.length > 0 ? match[0] : Quickshell.screens[0];
-        const x = (scr ? scr.x : 0) + Settings.barWidth + 8;
-        const y = (scr ? scr.y : 0) + 20;
+        // alignment/gap (tuned for the old always-on KDE setup). Conky
+        // treats the gap as relative to its xinerama head — the primary
+        // monitor, which is where the bar lives — so no screen-origin
+        // offset here. (The awesome rule additionally pins the window to
+        // the bar's screen.)
+        // +11: conky positions its window ~11px left of the requested gap
+        // (own-window margin quirk), measured against awesome's geometry
+        const x = Settings.barWidth + 19;
+        const y = 20;
         Quickshell.execDetached(["sh", "-c",
             "if pgrep -u $USER -x conky >/dev/null; then killall conky; " +
             "else cd \"$HOME/.conky\" 2>/dev/null; " +

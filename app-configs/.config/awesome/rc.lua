@@ -43,6 +43,7 @@ awful.layout.layouts = {
     awful.layout.suit.spiral.dwindle,
     awful.layout.suit.tile,
     awful.layout.suit.tile.left,
+    awful.layout.suit.tile.bottom,
     awful.layout.suit.fair,
     awful.layout.suit.max,
     awful.layout.suit.floating,
@@ -54,16 +55,31 @@ local _rules    = require("modules.rules")
 local _auto     = require("modules.autostart")
 
 awful.screen.connect_for_each_screen(function(s)
+    -- Portrait monitors stack windows vertically (master on top, new
+    -- windows below); landscape screens keep dwindle.
+    local default = s.geometry.height > s.geometry.width
+        and awful.layout.suit.tile.bottom
+        or awful.layout.layouts[1]
+    -- 4 tags is plenty; bump this list if more are ever needed
+    -- (Super+[1-9] bindings already cover up to 9)
     awful.tag(
-        { "1", "2", "3", "4", "5", "6", "7", "8", "9" },
+        { "1", "2", "3", "4" },
         s,
-        awful.layout.layouts[1]
+        default
     )
 end)
 
 -- The bar itself is quickshell (spawned in autostart.lua); this feeds it
 -- tag/layout state.
 qs_bridge.setup()
+
+-- Stop the systemd session target on real logout (not on Super+Ctrl+R),
+-- so graphical-session services (espanso, ...) shut down like under Plasma.
+awesome.connect_signal("exit", function(restarting)
+    if not restarting then
+        awful.spawn.with_shell("systemctl --user stop awesome-session.target")
+    end
+end)
 
 root.keys(keys.globalkeys)
 root.buttons(keys.rootbuttons)

@@ -52,6 +52,20 @@ SettingsPage {
                     page.setChosen(outCol.modelData.name, { mode: value })
             }
 
+            ComboRow {
+                label: "Rotation"
+                options: [
+                    { label: "Landscape", value: "normal" },
+                    { label: "Portrait (left)", value: "left" },
+                    { label: "Portrait (right)", value: "right" },
+                    { label: "Upside down", value: "inverted" }
+                ]
+                current: (page.chosen[outCol.modelData.name] || {}).rotate
+                    || outCol.modelData.rotation
+                onSelected: value =>
+                    page.setChosen(outCol.modelData.name, { rotate: value })
+            }
+
             ToggleRow {
                 label: "Primary display"
                 checked: (page.chosen[outCol.modelData.name] || {}).primary

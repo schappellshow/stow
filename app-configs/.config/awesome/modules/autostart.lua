@@ -14,6 +14,14 @@ local function run_once(cmd_arr)
     ))
 end
 
+-- Tie the systemd user session lifecycle to this session: services hooked
+-- to graphical-session.target (espanso, ...) start here like they did
+-- under Plasma. The matching stop lives in rc.lua's exit handler.
+awful.spawn.with_shell(
+    "systemctl --user import-environment DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP DESKTOP_SESSION 2>/dev/null; "
+    .. "systemctl --user start awesome-session.target"
+)
+
 -- Kill the system-default xcompmgr before picom claims the compositing slot
 awful.spawn.with_shell(
     "pkill -x xcompmgr; sleep 0.5 && picom --config ~/.config/picom/picom.conf --daemon"

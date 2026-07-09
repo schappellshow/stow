@@ -10,7 +10,12 @@ local M = {}
 M.globalkeys = gears.table.join(
 
     -- ── Awesome ────────────────────────────────────────────────────────────
+    -- Both open the keybind reference: F1 for full keyboards, S for 60%
+    -- boards where F1 needs Fn (and Super+Fn is the Everest's Game Mode
+    -- chord — avoid holding them together).
     awful.key({ modkey }, "F1", hotkeys_popup.show_help,
+        { description = "show keybindings", group = "awesome" }),
+    awful.key({ modkey }, "s", hotkeys_popup.show_help,
         { description = "show keybindings", group = "awesome" }),
     awful.key({ modkey, "Control" }, "r", awesome.restart,
         { description = "reload config", group = "awesome" }),
@@ -249,7 +254,10 @@ M.clientkeys = gears.table.join(
         { description = "toggle on-top", group = "client" }),
     awful.key({ modkey, "Control" }, "Return",
         function(c) c:swap(awful.client.getmaster()) end,
-        { description = "promote to master", group = "client" })
+        { description = "promote to master", group = "client" }),
+    awful.key({ modkey }, "o",
+        function(c) c:move_to_screen() end,
+        { description = "move to next screen", group = "client" })
 )
 
 -- Client mouse buttons
@@ -267,10 +275,11 @@ M.clientbuttons = gears.table.join(
     end)
 )
 
--- Root (desktop) mouse buttons — scroll to switch tags
+-- Root (desktop) mouse buttons — scroll to switch tags.
+-- Scroll down (button 5) = next tag, matching the bar taglist direction.
 M.rootbuttons = gears.table.join(
-    awful.button({ }, 4, awful.tag.viewnext),
-    awful.button({ }, 5, awful.tag.viewprev)
+    awful.button({ }, 4, awful.tag.viewprev),
+    awful.button({ }, 5, awful.tag.viewnext)
 )
 
 return M

@@ -75,7 +75,8 @@ awful.rules.rules = {
     -- the keybind shows it over whatever you're doing, never focused.
     -- ontop/below here override the conkyrc's 'below' window hint.
     {
-        rule = { class = "Conky" },
+        -- conky reports lowercase "conky"; match either casing
+        rule_any = { class = { "Conky", "conky" } },
         properties = {
             floating          = true,
             border_width      = 0,
@@ -88,6 +89,12 @@ awful.rules.rules = {
             -- Keep the position conky was launched with (-x/-y from the
             -- SYS pill); overrides the default rule's no_overlap placement
             placement         = false,
+            -- Always on the bar's screen, even when another monitor has
+            -- focus (the default rule would assign the focused screen and
+            -- drag the window away from its bar-side position)
+            screen            = function()
+                return require("modules.quickshell").bar_screen()
+            end,
         }
     },
 

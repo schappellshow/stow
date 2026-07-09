@@ -13,6 +13,33 @@ PanelWindow {
     // Awesome's view of this screen (tags, layout), matched by output name
     readonly property var awScreen: AwesomeState.forOutput(bar.screen.name)
 
+    // Tags are per-screen in awesome; with one bar we show every screen's
+    // taglist, ordered to match the physical left→right arrangement.
+    // Clicks/scrolls in a section drive THAT screen (the bridge commands
+    // take a screen index).
+    readonly property var tagSections: {
+        const sections = [];
+        for (const aws of AwesomeState.screens) {
+            let x = 999999;
+            let label = "?";
+            let isHere = false;
+            for (const out of (aws.outputs || [])) {
+                for (const qs of Quickshell.screens)
+                    if (qs.name === out)
+                        x = Math.min(x, qs.x);
+                if (out === bar.screen.name)
+                    isHere = true;
+                label = out.replace("DisplayPort-", "DP")
+                           .replace("HDMI-A-", "HD");
+            }
+            sections.push({ aw: aws, x: x, label: label, isHere: isHere });
+        }
+        // This screen's full list first, then the other monitors'
+        // compact sections in physical left→right order
+        sections.sort((a, b) => (b.isHere - a.isHere) || (a.x - b.x));
+        return sections;
+    }
+
     anchors {
         left: true
         top: true
@@ -20,6 +47,11 @@ PanelWindow {
     }
     implicitWidth: Settings.barWidth
     color: "transparent"
+
+    // No strut: X11 struts can't reserve the left edge of a middle monitor.
+    // Awesome pads the screen instead (modules/quickshell.lua
+    // apply_bar_padding, re-pushed by common/BarSpace.qml on changes).
+    exclusionMode: ExclusionMode.Ignore
 
     Item {
         anchors.fill: parent
@@ -29,10 +61,36 @@ PanelWindow {
             anchors.top: parent.top
             anchors.topMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
-            visible: bar.awScreen !== null
+            visible: bar.tagSections.length > 0
 
-            Workspaces {
-                awScreen: bar.awScreen
+            Repeater {
+                model: bar.tagSections
+
+                Column {
+                    id: section
+
+                    required property var modelData
+
+                    spacing: 3
+
+                    Text {
+                        // Label only the OTHER monitors' compact sections;
+                        // the full list is implicitly this screen
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        visible: bar.tagSections.length > 1
+                            && !section.modelData.isHere
+                        text: section.modelData.label
+                        font.family: Theme.fontFamily
+                        font.bold: true
+                        font.pointSize: 6
+                        color: Theme.muted
+                    }
+
+                    Workspaces {
+                        awScreen: section.modelData.aw
+                        compact: !section.modelData.isHere
+                    }
+                }
             }
         }
 

@@ -127,6 +127,9 @@ fi
 info "Directories"
 mkdir -p "$HOME/Pictures/Screenshots"
 
+info "systemd user units (awesome-session.target)"
+systemctl --user daemon-reload || true
+
 info "Seeding dark theme on all system channels"
 "$HOME/.local/bin/system-theme-apply" dark || true
 

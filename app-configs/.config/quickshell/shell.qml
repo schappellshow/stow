@@ -22,6 +22,7 @@ ShellRoot {
         PowerConfig.init();
         PowerEvents.init();
         Autostart.init();
+        BarSpace.init();
     }
 
     Variants {
