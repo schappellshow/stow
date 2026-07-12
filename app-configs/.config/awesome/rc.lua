@@ -69,6 +69,24 @@ awful.screen.connect_for_each_screen(function(s)
     )
 end)
 
+-- Cold boot ordering: awesome creates tags before quickshell replays the
+-- saved xrandr layout, so a to-be-rotated screen still reads landscape at
+-- tag creation and gets the wrong default. When a screen's orientation
+-- changes, retarget only tags still sitting on the other orientation's
+-- default — manual layout choices survive untouched.
+screen.connect_signal("property::geometry", function(s)
+    local portrait = s.geometry.height > s.geometry.width
+    local from = portrait and awful.layout.suit.spiral.dwindle
+                          or  awful.layout.suit.tile.bottom
+    local to   = portrait and awful.layout.suit.tile.bottom
+                          or  awful.layout.suit.spiral.dwindle
+    for _, t in ipairs(s.tags) do
+        if t.layout == from then
+            t.layout = to
+        end
+    end
+end)
+
 -- The bar itself is quickshell (spawned in autostart.lua); this feeds it
 -- tag/layout state.
 qs_bridge.setup()
