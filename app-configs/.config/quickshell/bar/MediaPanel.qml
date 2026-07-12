@@ -169,14 +169,18 @@ PopupWindow {
                 width: parent.width
                 height: 40
 
+                // Drawn/non-emoji controls: ⏮⏸⏭ fall back to the color
+                // emoji font, which ignores QML colors — same fix as the
+                // bar's media pill.
                 Row {
                     anchors.centerIn: parent
                     spacing: 22
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "⏮"   // ⏮
-                        font.pointSize: 14
+                        text: "◄◄"
+                        font.pointSize: 10
+                        font.letterSpacing: -2
                         color: Theme.subtext
                         opacity: panel.player && panel.player.canGoPrevious ? 1 : 0.35
 
@@ -190,12 +194,22 @@ PopupWindow {
                         width: 36
                         height: 36
                         radius: 18
-                        color: Theme.accent
+                        color: Theme.surface
+
+                        Row {
+                            anchors.centerIn: parent
+                            visible: panel.player !== null && panel.player.isPlaying
+                            spacing: 4
+
+                            Rectangle { width: 4; height: 13; radius: 1; color: Theme.text }
+                            Rectangle { width: 4; height: 13; radius: 1; color: Theme.text }
+                        }
 
                         Text {
                             anchors.centerIn: parent
-                            text: panel.player && panel.player.isPlaying ? "⏸" : "▶"
-                            font.pointSize: 13
+                            visible: panel.player === null || !panel.player.isPlaying
+                            text: "►"
+                            font.pointSize: 11
                             color: Theme.text
                         }
 
@@ -207,8 +221,9 @@ PopupWindow {
 
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "⏭"   // ⏭
-                        font.pointSize: 14
+                        text: "►►"
+                        font.pointSize: 10
+                        font.letterSpacing: -2
                         color: Theme.subtext
                         opacity: panel.player && panel.player.canGoNext ? 1 : 0.35
 
