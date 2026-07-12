@@ -129,5 +129,8 @@ autoload bashcompinit
 bashcompinit
 source "/home/mike/.local/share/bash-completion/completions/am"
 
-# zoxide — must stay at the end of this file (it wraps cd)
+# zoxide — must stay at the end of this file (it wraps cd).
+# _ZO_DOCTOR=0: the init-order self-check misfires in non-interactive
+# shells (scripts, tool runners) and spams a warning; init is already last.
+export _ZO_DOCTOR=0
 eval "$(zoxide init --cmd cd zsh)"

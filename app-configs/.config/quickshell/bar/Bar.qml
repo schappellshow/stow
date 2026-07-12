@@ -71,6 +71,7 @@ PanelWindow {
 
                     required property var modelData
 
+                    anchors.horizontalCenter: parent.horizontalCenter
                     spacing: 3
 
                     Text {
@@ -87,6 +88,7 @@ PanelWindow {
                     }
 
                     Workspaces {
+                        anchors.horizontalCenter: parent.horizontalCenter
                         awScreen: section.modelData.aw
                         compact: !section.modelData.isHere
                     }
@@ -94,12 +96,13 @@ PanelWindow {
             }
         }
 
-        // Media section — only there when an MPRIS player exists.
+        // Media section — only there when an MPRIS player exists; sits
+        // just above the bottom status cluster.
         // Left-click: media panel; right-click: play/pause.
         Pill {
             id: mediaPill
-            anchors.top: tagPill.visible ? tagPill.bottom : parent.top
-            anchors.topMargin: tagPill.visible ? 6 : 8
+            anchors.bottom: bottomPill.top
+            anchors.bottomMargin: 6
             anchors.horizontalCenter: parent.horizontalCenter
             visible: Media.active !== null && Settings.showMediaPill
             padV: 5
@@ -108,12 +111,24 @@ PanelWindow {
                 width: 20
                 height: 20
 
+                // Drawn pause bars + non-emoji play glyph: ⏸/▶ fall back
+                // to the color emoji font, which ignores `color` entirely
+                // (that was the orange pause button)
+                Row {
+                    anchors.centerIn: parent
+                    visible: Media.active !== null && Media.active.isPlaying
+                    spacing: 3
+
+                    Rectangle { width: 3; height: 11; radius: 1; color: Theme.muted }
+                    Rectangle { width: 3; height: 11; radius: 1; color: Theme.muted }
+                }
+
                 Text {
                     anchors.centerIn: parent
-                    text: Media.active && Media.active.isPlaying ? "⏸" : "▶"
-                    font.pointSize: 10
-                    color: Media.active && Media.active.isPlaying
-                         ? Theme.accentBright : Theme.muted
+                    visible: Media.active === null || !Media.active.isPlaying
+                    text: "►"
+                    font.pointSize: 9
+                    color: Theme.muted
                 }
 
                 MouseArea {
@@ -147,29 +162,48 @@ PanelWindow {
         }
 
         Pill {
+            id: bottomPill
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 8
             anchors.horizontalCenter: parent.horizontalCenter
             padV: 6
 
+            // Pill stacks children top-aligned at x=0; center each one
             TrayColumn {
+                anchors.horizontalCenter: parent.horizontalCenter
                 barWindow: bar
                 visible: Settings.showTray
             }
 
-            NotifBell {}
+            NotifBell {
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-            VolumeWidget { id: volumeWidget }
+            VolumeWidget {
+                id: volumeWidget
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-            NetworkWidget { id: networkWidget }
+            NetworkWidget {
+                id: networkWidget
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-            BluetoothWidget { id: bluetoothWidget }
+            BluetoothWidget {
+                id: bluetoothWidget
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-            SysMonWidget {}
+            SysMonWidget {
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
-            Battery {}
+            Battery {
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
 
             LayoutBox {
+                anchors.horizontalCenter: parent.horizontalCenter
                 visible: Settings.showLayoutBox
                 screenIndex: bar.awScreen ? bar.awScreen.index : 1
                 layoutName: bar.awScreen ? bar.awScreen.layout : ""

@@ -24,9 +24,21 @@ Column {
             width: 18
             height: 18
 
+            // quickshell can't search SNI custom icon paths (apps like
+            // Spotify ship "image://icon/<name>?path=<dir>") — rebuild
+            // those into direct file URLs so they don't render as the
+            // missing-icon checkerboard.
+            function fixIcon(icon) {
+                const m = /^image:\/\/icon\/(.*)\?path=(.*)$/.exec(icon);
+                if (m)
+                    return "file://" + m[2] + "/" + m[1]
+                        + (m[1].includes(".") ? "" : ".png");
+                return icon;
+            }
+
             IconImage {
                 anchors.fill: parent
-                source: trayItem.modelData.icon
+                source: trayItem.fixIcon(trayItem.modelData.icon)
             }
 
             QsMenuAnchor {
