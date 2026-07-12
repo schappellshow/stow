@@ -12,9 +12,26 @@ Singleton {
     // [{ name, primary, x, y, rotation, currentMode, modes: [string] }]
     property var outputs: []
 
+    // Settings load asynchronously: at startup-chain time displayCmd may
+    // still be the "" default, so the replay also triggers when the value
+    // arrives (onDisplayCmdChanged). Guarded so a user Apply — which runs
+    // xrandr itself and then writes displayCmd — doesn't double-fire.
+    property bool replayed: false
+
     function init() {
-        if (Settings.displayCmd !== "")
-            Quickshell.execDetached(["sh", "-c", "xrandr " + Settings.displayCmd]);
+        tryReplay();
+    }
+
+    function tryReplay() {
+        if (replayed || Settings.displayCmd === "")
+            return;
+        replayed = true;
+        Quickshell.execDetached(["sh", "-c", "xrandr " + Settings.displayCmd]);
+    }
+
+    Connections {
+        target: Settings
+        function onDisplayCmdChanged() { root.tryReplay(); }
     }
 
     function probe() {
@@ -36,6 +53,7 @@ Singleton {
         }
         const cmd = args.join(" ");
         Quickshell.execDetached(["sh", "-c", "xrandr " + cmd]);
+        replayed = true;   // this IS the apply; don't replay on the write
         Settings.displayCmd = cmd;
         reprobe.restart();
     }
