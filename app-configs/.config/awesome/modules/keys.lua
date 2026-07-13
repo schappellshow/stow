@@ -280,7 +280,7 @@ M.mainmenu = awful.menu({
     items = {
         { "Apps",           function() awful.spawn("rofi -show drun") end },
         { "Terminal",       function() awful.spawn(terminal) end },
-        { "Files",          function() awful.spawn("dolphin") end },
+        { "Files",          function() awful.spawn("thunar") end },
         { "Settings",       function() awful.spawn("qs ipc call settings open appearance") end },
         { "System Monitor", function() awful.spawn("qs ipc call sysmon toggle") end },
         { "Keybindings",    function() hotkeys_popup.show_help() end },

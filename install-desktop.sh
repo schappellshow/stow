@@ -25,7 +25,7 @@ sudo dnf install --allowerasing -y \
     xsettingsd feh scrot flameshot playerctl \
     xdg-desktop-portal xdg-desktop-portal-gtk plasma-workspace \
     lxqt-policykit i3lock-color brightnessctl \
-    pavucontrol-qt blueman networkmanager-applet \
+    pavucontrol-qt blueman networkmanager-applet thunar \
     ghostty micro \
     fonts-ttf-hack noto-sans-fonts \
     stow git curl \
