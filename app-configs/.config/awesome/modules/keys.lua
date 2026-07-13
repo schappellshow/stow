@@ -275,9 +275,27 @@ M.clientbuttons = gears.table.join(
     end)
 )
 
--- Root (desktop) mouse buttons — scroll to switch tags.
+-- Desktop right-click menu (styled by theme.lua's menu_* settings)
+M.mainmenu = awful.menu({
+    items = {
+        { "Apps",           function() awful.spawn("rofi -show drun") end },
+        { "Terminal",       function() awful.spawn(terminal) end },
+        { "Files",          function() awful.spawn("dolphin") end },
+        { "Settings",       function() awful.spawn("qs ipc call settings open appearance") end },
+        { "System Monitor", function() awful.spawn("qs ipc call sysmon toggle") end },
+        { "Keybindings",    function() hotkeys_popup.show_help() end },
+        { "Awesome", {
+            { "Reload",  awesome.restart },
+            { "Log Out", function() awesome.quit() end },
+        } },
+        { "Power",          function() awful.spawn("qs ipc call power toggle") end },
+    },
+})
+
+-- Root (desktop) mouse buttons — right-click menu; scroll to switch tags.
 -- Scroll down (button 5) = next tag, matching the bar taglist direction.
 M.rootbuttons = gears.table.join(
+    awful.button({ }, 3, function() M.mainmenu:toggle() end),
     awful.button({ }, 4, awful.tag.viewprev),
     awful.button({ }, 5, awful.tag.viewnext)
 )
