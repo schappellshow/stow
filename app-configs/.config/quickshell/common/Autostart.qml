@@ -26,8 +26,11 @@ Singleton {
         for (const e of list) {
             if (!e || e.enabled !== true || !e.command)
                 continue;
-            // pgrep guard so a shell restart doesn't spawn duplicates
-            const q = "'" + e.command.replace(/'/g, "'\\''") + "'";
+            // pgrep guard so a shell restart doesn't spawn duplicates.
+            // ^ anchor: the guard's own `sh -c pgrep ...` command line
+            // contains the command string, so an unanchored -f pattern
+            // matches itself and nothing ever spawns.
+            const q = "'^" + e.command.replace(/'/g, "'\\''") + "'";
             Quickshell.execDetached(["sh", "-c",
                 "pgrep -u $USER -f " + q + " >/dev/null || (" +
                 e.command + " >/dev/null 2>&1 &)"]);

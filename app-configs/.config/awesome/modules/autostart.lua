@@ -1,14 +1,18 @@
 local awful = require("awful")
 
--- Spawn a program if it isn't already running
+-- Spawn a program if it isn't already running. The [f]irst-char bracket
+-- keeps pgrep -f from matching this guard's own shell command line
+-- (and -x can't be used: it only sees the 15-char comm, so patterns with
+-- arguments like "greenclip daemon" never matched and respawned dupes).
 local function run_once(cmd_arr)
     local findme  = cmd_arr[1]
     local firstarg = cmd_arr[2]
     if firstarg then
         findme = findme .. " " .. firstarg
     end
+    findme = findme:gsub("^(.)", "[%1]")
     awful.spawn.with_shell(string.format(
-        "pgrep -u $USER -x '%s' > /dev/null || (%s)",
+        "pgrep -u $USER -f '%s' > /dev/null || (%s)",
         findme,
         table.concat(cmd_arr, " ")
     ))
@@ -41,9 +45,11 @@ run_once({ "greenclip", "daemon" })
 -- xsettingsd propagates GTK/icon theme to running apps
 run_once({ "xsettingsd" })
 
--- Polkit authentication agent (lxqt-policykit: Qt-native, no KDE deps)
+-- Polkit authentication agent (lxqt-policykit: Qt-native, no KDE deps).
+-- [l] bracket trick: without it, pgrep -f matches this guard's own shell
+-- command line and the agent never starts.
 awful.spawn.with_shell(
-    "pgrep -u $USER -f lxqt-policykit-agent > /dev/null || /usr/libexec/lxqt-policykit-agent &"
+    "pgrep -u $USER -f '[l]xqt-policykit-agent' > /dev/null || /usr/libexec/lxqt-policykit-agent &"
 )
 
 -- Screen locking: xss-lock bridges X screensaver + systemd (loginctl
