@@ -26,6 +26,7 @@ sudo dnf install --allowerasing -y \
     xdg-desktop-portal xdg-desktop-portal-gtk plasma-workspace \
     lxqt-policykit i3lock-color brightnessctl \
     pavucontrol-qt blueman networkmanager-applet thunar \
+    borgbackup bup \
     ghostty micro \
     fonts-ttf-hack noto-sans-fonts \
     stow git curl \
@@ -127,8 +128,11 @@ fi
 info "Directories"
 mkdir -p "$HOME/Pictures/Screenshots"
 
-info "systemd user units (awesome-session.target)"
+info "systemd user units (awesome-session.target, backup-home.timer)"
 systemctl --user daemon-reload || true
+# Backup timer only fires usefully where /mnt/backup exists (the script
+# no-ops with a notification otherwise) — safe to enable everywhere
+systemctl --user enable backup-home.timer 2>/dev/null || true
 
 info "Seeding dark theme on all system channels"
 "$HOME/.local/bin/system-theme-apply" dark || true

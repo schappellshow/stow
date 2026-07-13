@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Daily borg backup of home to the internal HDD (run by the
+# backup-home.timer systemd user unit; run manually any time).
+# Exclusions mirror the old KDE/KUP plan, recovered from ~/.config/kuprc.
+# The old KUP/bup history lives untouched at /mnt/backup/maximus_backups
+# (browse it with `bup -d ... ls`).
+set -euo pipefail
+
+export BORG_REPO=/mnt/backup/maximus_borg
+
+if ! mountpoint -q /mnt/backup; then
+    notify-send -u critical "Backup skipped" \
+        "/mnt/backup is not mounted" 2>/dev/null || true
+    exit 0
+fi
+
+# First run creates the repository. No encryption: the disk lives inside
+# the same machine the key would live on.
+if [ ! -d "$BORG_REPO" ]; then
+    borg init --encryption=none "$BORG_REPO"
+fi
+
+borg create \
+    --compression zstd,3 \
+    --exclude-caches \
+    --exclude "$HOME/.cache" \
+    --exclude "$HOME/.local/share/Trash" \
+    --exclude "$HOME/.local/share/baloo" \
+    --exclude "$HOME/.thumbnails" \
+    --exclude "$HOME/ISOs" \
+    --exclude "$HOME/VMs" \
+    --exclude "$HOME/state" \
+    "::home-{now:%Y-%m-%d_%H%M}" \
+    "$HOME"
+
+# Keep 7 daily, 4 weekly, 6 monthly — the disk never silently fills
+borg prune --keep-daily 7 --keep-weekly 4 --keep-monthly 6
+borg compact
+
+notify-send "Backup complete" \
+    "$(borg info --last 1 --format '{archive}')" 2>/dev/null || true
