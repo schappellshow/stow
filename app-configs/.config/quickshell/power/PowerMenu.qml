@@ -13,6 +13,35 @@ Scope {
     property bool shown: false
     property int selected: 0
 
+    // Per-output blurred wallpaper backgrounds, borrowed from
+    // betterlockscreen's cache so the menu matches the lock screen.
+    // Missing cache (or a monitor without one) falls back to plain dim.
+    property var bgs: ({})
+
+    onShownChanged: {
+        if (shown)
+            bgProbe.running = true;
+    }
+
+    Process {
+        id: bgProbe
+        command: ["sh", "-c",
+            "for d in \"$HOME\"/.cache/betterlockscreen/*/; do " +
+            "n=${d%/}; n=${n##*/}; n=${n#*-}; " +
+            "[ -f \"$d/dimblur.png\" ] && echo \"$n $d/dimblur.png\"; done"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const map = {};
+                for (const line of text.trim().split("\n")) {
+                    const i = line.indexOf(" ");
+                    if (i > 0)
+                        map[line.slice(0, i)] = line.slice(i + 1);
+                }
+                root.bgs = map;
+            }
+        }
+    }
+
     readonly property var actions: [
         { label: "Lock",      color: Theme.blue,   cmd: ["loginctl", "lock-session"] },
         { label: "Log Out",   color: Theme.teal,   cmd: ["awesome-client", "awesome.quit()"] },
@@ -67,9 +96,21 @@ Scope {
                 right: true
             }
 
+            Image {
+                id: bgImage
+                anchors.fill: parent
+                source: root.bgs[win.modelData.name] !== undefined
+                    ? "file://" + root.bgs[win.modelData.name] : ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: false   // wallpaper changes rewrite the same paths
+            }
+
             Rectangle {
                 anchors.fill: parent
-                color: Qt.rgba(0, 0, 0, 0.65)
+                // Lighter veil when the blurred wallpaper is behind it
+                color: bgImage.status === Image.Ready
+                    ? Qt.rgba(0, 0, 0, 0.35) : Qt.rgba(0, 0, 0, 0.65)
 
                 MouseArea {
                     anchors.fill: parent
