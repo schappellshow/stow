@@ -99,6 +99,17 @@ awesome.connect_signal("exit", function(restarting)
     end
 end)
 
+-- Some GTK apps (ghostty) send a post-map configure request to move
+-- themselves to absolute coordinates; honoring it yanked freshly spawned
+-- tiled windows onto the leftmost monitor. Only floating clients may
+-- reposition themselves — the layout owns tiled geometry.
+client.disconnect_signal("request::geometry", awful.ewmh.client_geometry_requests)
+client.connect_signal("request::geometry", function(c, context, hints)
+    if c.floating then
+        awful.ewmh.client_geometry_requests(c, context, hints)
+    end
+end)
+
 root.keys(keys.globalkeys)
 root.buttons(keys.rootbuttons)
 
