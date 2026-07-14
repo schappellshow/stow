@@ -38,4 +38,4 @@ borg prune --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 borg compact
 
 notify-send "Backup complete" \
-    "$(borg info --last 1 --format '{archive}')" 2>/dev/null || true
+    "$(borg list --last 1 --format '{name}  {time}' 2>/dev/null)" 2>/dev/null || true
