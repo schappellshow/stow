@@ -20,9 +20,13 @@ awful.rules.rules = {
             buttons           = keys.clientbuttons,
             -- Spawn on the focused CLIENT's screen (keyboard-centric), not
             -- the mouse's — with sloppy focus the mouse can idle on another
-            -- monitor while you work, and new windows followed it there
-            screen            = function()
-                return awful.screen.focused({ client = true })
+            -- monitor while you work, and new windows followed it there.
+            -- During awesome (re)start every client is re-managed: keep its
+            -- existing screen then, or restarts scatter all windows onto
+            -- whichever screen happened to be "focused".
+            screen            = function(c)
+                return awesome.startup and c.screen
+                    or awful.screen.focused({ client = true })
             end,
             placement         = awful.placement.no_overlap + awful.placement.no_offscreen,
             titlebars_enabled = false,   -- no titlebars by default (Hyprland style)
