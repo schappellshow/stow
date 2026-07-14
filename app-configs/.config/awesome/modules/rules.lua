@@ -18,7 +18,12 @@ awful.rules.rules = {
             raise             = true,
             keys              = keys.clientkeys,
             buttons           = keys.clientbuttons,
-            screen            = awful.screen.preferred,
+            -- Spawn on the focused CLIENT's screen (keyboard-centric), not
+            -- the mouse's — with sloppy focus the mouse can idle on another
+            -- monitor while you work, and new windows followed it there
+            screen            = function()
+                return awful.screen.focused({ client = true })
+            end,
             placement         = awful.placement.no_overlap + awful.placement.no_offscreen,
             titlebars_enabled = false,   -- no titlebars by default (Hyprland style)
         }

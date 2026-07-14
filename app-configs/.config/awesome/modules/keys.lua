@@ -73,32 +73,32 @@ M.globalkeys = gears.table.join(
         function() awful.spawn("qs ipc call sysmon toggle") end,
         { description = "system monitor (conky)", group = "misc" }),
 
-    -- ── Focus (directional, vim-style) ────────────────────────────────────
+    -- ── Focus (directional, vim-style; crosses monitor edges) ─────────────
     awful.key({ modkey }, "h",
-        function() awful.client.focus.bydirection("left")  end,
+        function() awful.client.focus.global_bydirection("left")  end,
         { description = "focus left",  group = "client" }),
     awful.key({ modkey }, "l",
-        function() awful.client.focus.bydirection("right") end,
+        function() awful.client.focus.global_bydirection("right") end,
         { description = "focus right", group = "client" }),
     awful.key({ modkey }, "j",
-        function() awful.client.focus.bydirection("down")  end,
+        function() awful.client.focus.global_bydirection("down")  end,
         { description = "focus down",  group = "client" }),
     awful.key({ modkey }, "k",
-        function() awful.client.focus.bydirection("up")    end,
+        function() awful.client.focus.global_bydirection("up")    end,
         { description = "focus up",    group = "client" }),
 
-    -- ── Window swap ────────────────────────────────────────────────────────
+    -- ── Window swap (also crosses monitor edges) ───────────────────────────
     awful.key({ modkey, "Shift" }, "h",
-        function() awful.client.swap.bydirection("left")  end,
+        function() awful.client.swap.global_bydirection("left")  end,
         { description = "swap left",  group = "layout" }),
     awful.key({ modkey, "Shift" }, "l",
-        function() awful.client.swap.bydirection("right") end,
+        function() awful.client.swap.global_bydirection("right") end,
         { description = "swap right", group = "layout" }),
     awful.key({ modkey, "Shift" }, "j",
-        function() awful.client.swap.bydirection("down")  end,
+        function() awful.client.swap.global_bydirection("down")  end,
         { description = "swap down",  group = "layout" }),
     awful.key({ modkey, "Shift" }, "k",
-        function() awful.client.swap.bydirection("up")    end,
+        function() awful.client.swap.global_bydirection("up")    end,
         { description = "swap up",    group = "layout" }),
 
     -- ── Master sizing ──────────────────────────────────────────────────────
