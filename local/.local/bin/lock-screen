@@ -3,9 +3,11 @@
 # suspend) and `loginctl lock-session` / Ctrl+Alt+L.
 # Swap lockers here without touching keybinds or xss-lock.
 #
-# Preferred: xsecurelock (login-style prompt with a real password field —
-# asterisks as you type). Falls back to i3lock-color's ring indicator, then
-# plain i3lock, if it isn't installed yet.
+# Preferred: betterlockscreen (blurred/dimmed wallpaper via i3lock-color;
+# theme in ~/.config/betterlockscreenrc, cache in ~/.cache/betterlockscreen
+# rebuilt on wallpaper changes by quickshell's Wallpaper singleton).
+# Falls back to xsecurelock (login-style password field), then i3lock-color's
+# ring, then plain i3lock.
 #
 # The locker must not fork: xss-lock holds the systemd sleep inhibitor until
 # this process exits, guaranteeing the screen is locked before suspend
@@ -20,6 +22,13 @@ BRIGHT=40a5daff
 RED=cc2263ff
 GREEN=40da76ff
 CLEAR=00000000
+
+# Cache check: without generated images betterlockscreen can't lock —
+# fall through to xsecurelock rather than failing open
+if command -v betterlockscreen >/dev/null 2>&1 \
+        && [ -n "$(ls -A "$HOME/.cache/betterlockscreen" 2>/dev/null)" ]; then
+    exec betterlockscreen -l dimblur
+fi
 
 if command -v xsecurelock >/dev/null 2>&1; then
     export XSECURELOCK_AUTH_BACKGROUND_COLOR="#232627"

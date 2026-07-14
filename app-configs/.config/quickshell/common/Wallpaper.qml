@@ -16,8 +16,15 @@ Singleton {
     }
 
     function apply() {
-        if (Settings.wallpaperPath !== "")
-            Quickshell.execDetached(["feh", "--bg-fill", expand(Settings.wallpaperPath)]);
+        if (Settings.wallpaperPath === "")
+            return;
+        const p = expand(Settings.wallpaperPath);
+        Quickshell.execDetached(["feh", "--bg-fill", p]);
+        // Rebuild the lock screen's blurred/dimmed cache to match
+        // (betterlockscreen lives in ~/.local/bin; skip silently if absent)
+        Quickshell.execDetached(["sh", "-c",
+            "command -v betterlockscreen >/dev/null && " +
+            "betterlockscreen -u '" + p + "' >/dev/null 2>&1 || true"]);
     }
 
     Connections {

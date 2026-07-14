@@ -114,6 +114,17 @@ else
     echo "  already installed"
 fi
 
+info "betterlockscreen (single script, not packaged for OMLx; wraps"
+info "i3lock-color — preferred by the lock-screen wrapper once its cache"
+info "exists; cache builds on first wallpaper apply)"
+if ! command -v betterlockscreen >/dev/null 2>&1; then
+    curl -fsSL https://raw.githubusercontent.com/betterlockscreen/betterlockscreen/main/betterlockscreen \
+        -o "$HOME/.local/bin/betterlockscreen"
+    chmod +x "$HOME/.local/bin/betterlockscreen"
+else
+    echo "  already installed"
+fi
+
 info "rofimoji (emoji picker; not packaged for OMLx)"
 if ! command -v rofimoji >/dev/null 2>&1; then
     if command -v pipx >/dev/null 2>&1 && pipx --version >/dev/null 2>&1; then
