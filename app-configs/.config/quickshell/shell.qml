@@ -1,3 +1,7 @@
+//@ pragma UseQApplication
+// (required for QsMenuAnchor — tray right-click menus are silent no-ops
+// without it)
+
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -74,6 +78,15 @@ ShellRoot {
 
         function toggle(): void {
             SysMon.toggleConky();
+        }
+    }
+
+    // `qs ipc call calendar toggle` — Super+v in awesome
+    IpcHandler {
+        target: "calendar"
+
+        function toggle(): void {
+            BarState.toggleCalendar();
         }
     }
 

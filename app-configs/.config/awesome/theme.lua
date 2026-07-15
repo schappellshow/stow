@@ -41,7 +41,9 @@ theme.hotkeys_description_font     = "Hack 9"
 -- (~/.config/quickshell); this theme only covers what awesome still draws:
 -- borders, gaps, titlebars, menu, hotkeys popup, and internal naughty errors.
 
--- Window borders
+-- Window borders (the "outline around the bar" was awesome managing the
+-- bar window itself and bordering it — see the quickshell rule in
+-- rules.lua, not these colors)
 theme.border_width  = dpi(2)
 theme.border_normal = om.surface
 theme.border_focus  = om.bright_blue

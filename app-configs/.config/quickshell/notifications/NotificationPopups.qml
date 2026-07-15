@@ -22,8 +22,21 @@ Scope {
         }
     }
 
+    Variants {
+        // Popups on the bar's screen (all quickshell windows need an
+        // explicit screen under UseQApplication, or they lose their dock
+        // anchoring and land at 0,0 on the first monitor)
+        model: {
+            const match = Quickshell.screens.filter(
+                s => s.name === Settings.barScreen);
+            return match.length > 0 ? match : [Quickshell.screens[0]];
+        }
+
     PanelWindow {
         id: win
+
+        required property var modelData
+        screen: modelData
 
         visible: server.trackedNotifications.values.length > 0
               && !Settings.doNotDisturb
@@ -38,7 +51,7 @@ Scope {
         }
         exclusionMode: ExclusionMode.Ignore
         implicitWidth: 360
-        implicitHeight: stack.implicitHeight
+        implicitHeight: Math.max(1, stack.implicitHeight)
         color: "transparent"
 
         Column {
@@ -56,12 +69,9 @@ Scope {
 
                     readonly property string iconSrc: NotifHistory.iconSource(
                         modelData.image || "", modelData.appIcon || "")
-                    readonly property int textX: iconSrc !== "" ? 52 : 12
 
                     width: stack.width
-                    implicitHeight: Math.max(
-                        body.y + body.implicitHeight + 12,
-                        iconSrc !== "" ? 56 : 0)
+                    implicitHeight: content.implicitHeight + 24
                     radius: Theme.radius
                     color: Theme.surface
                     border.color: card.modelData.urgency === NotificationUrgency.Critical
@@ -69,56 +79,60 @@ Scope {
                     border.width: 2
                     opacity: 0.95
 
-                    Image {
+                    Row {
+                        id: content
+
                         x: 12
                         y: 12
-                        width: 32
-                        height: 32
-                        visible: card.iconSrc !== ""
-                        source: card.iconSrc
-                        fillMode: Image.PreserveAspectFit
-                        asynchronous: true
-                        sourceSize.width: 64
-                    }
+                        width: parent.width - 24
+                        spacing: 10
 
-                    Text {
-                        id: appName
-                        x: card.textX
-                        y: 8
-                        width: parent.width - card.textX - 12
-                        text: card.modelData.appName || "notification"
-                        elide: Text.ElideRight
-                        font.family: Theme.fontFamily
-                        font.pointSize: 7
-                        color: Theme.muted
-                    }
+                        Image {
+                            width: 32
+                            height: 32
+                            visible: card.iconSrc !== ""
+                            source: card.iconSrc
+                            fillMode: Image.PreserveAspectFit
+                            asynchronous: true
+                            sourceSize.width: 64
+                        }
 
-                    Text {
-                        id: summary
-                        x: card.textX
-                        y: appName.y + appName.implicitHeight + 2
-                        width: parent.width - card.textX - 12
-                        text: card.modelData.summary
-                        elide: Text.ElideRight
-                        font.family: Theme.fontFamily
-                        font.bold: true
-                        font.pointSize: 10
-                        color: Theme.text
-                    }
+                        Column {
+                            width: content.width
+                                - (card.iconSrc !== "" ? 42 : 0)
+                            spacing: 3
 
-                    Text {
-                        id: body
-                        x: card.textX
-                        y: summary.y + summary.implicitHeight + (text.length > 0 ? 4 : 0)
-                        width: parent.width - card.textX - 12
-                        visible: text.length > 0
-                        text: card.modelData.body
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 4
-                        elide: Text.ElideRight
-                        font.family: Theme.fontFamily
-                        font.pointSize: 9
-                        color: Theme.subtext
+                            Text {
+                                width: parent.width
+                                text: card.modelData.appName || "notification"
+                                elide: Text.ElideRight
+                                font.family: Theme.fontFamily
+                                font.pointSize: 7
+                                color: Theme.muted
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: card.modelData.summary
+                                elide: Text.ElideRight
+                                font.family: Theme.fontFamily
+                                font.bold: true
+                                font.pointSize: 10
+                                color: Theme.text
+                            }
+
+                            Text {
+                                width: parent.width
+                                visible: text.length > 0
+                                text: card.modelData.body
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 4
+                                elide: Text.ElideRight
+                                font.family: Theme.fontFamily
+                                font.pointSize: 9
+                                color: Theme.subtext
+                            }
+                        }
                     }
 
                     MouseArea {
@@ -136,5 +150,6 @@ Scope {
                 }
             }
         }
+    }
     }
 }

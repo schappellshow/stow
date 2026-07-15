@@ -1,0 +1,9 @@
+# Sourced by the X session before the WM starts; everything in the
+# session inherits these.
+
+# Qt apps outside KDE (quickshell's tray menus, pavucontrol-qt, ...) have
+# no platform theme under awesome and default to light Fusion. The
+# xdgdesktopportal theme asks the portal for the color scheme — our GTK
+# portal backend answers from the GSettings that system-theme-apply
+# writes, so Qt follows the shell's dark/light mode.
+export QT_QPA_PLATFORMTHEME=xdgdesktopportal

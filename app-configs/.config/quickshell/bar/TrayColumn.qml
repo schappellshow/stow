@@ -30,9 +30,14 @@ Column {
             // missing-icon checkerboard.
             function fixIcon(icon) {
                 const m = /^image:\/\/icon\/(.*)\?path=(.*)$/.exec(icon);
-                if (m)
+                if (m) {
+                    // Some apps (rustdesk) put an absolute path in the icon
+                    // NAME — joining it onto the dir doubles the path
+                    if (m[1].startsWith("/"))
+                        return "file://" + m[1];
                     return "file://" + m[2] + "/" + m[1]
                         + (m[1].includes(".") ? "" : ".png");
+                }
                 return icon;
             }
 

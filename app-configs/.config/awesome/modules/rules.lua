@@ -119,6 +119,22 @@ awful.rules.rules = {
         }
     },
 
+    -- Quickshell shell surfaces (bar, popups) sometimes map before their
+    -- WM_CLASS/dock type is set, so awesome manages them as ordinary
+    -- clients: bordered, focusable on hover — the "outline around the
+    -- bar". They keep the name "quickshell"; strip all management effects.
+    {
+        rule = { name = "^quickshell$" },
+        properties = {
+            floating          = true,
+            border_width      = 0,
+            focusable         = false,
+            titlebars_enabled = false,
+            skip_taskbar      = true,
+            placement         = false,
+        }
+    },
+
 }
 
 -- Titlebar builder — only fires when titlebars_enabled = true (dialogs)

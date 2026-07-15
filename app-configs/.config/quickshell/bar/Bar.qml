@@ -158,7 +158,7 @@ PanelWindow {
         // column, so the MouseArea overlays it from outside)
         MouseArea {
             anchors.fill: clockPill
-            onClicked: bar.calendarOpen = !bar.calendarOpen
+            onClicked: BarState.toggleCalendar()
         }
 
         Pill {
@@ -211,8 +211,6 @@ PanelWindow {
         }
     }
 
-    property bool calendarOpen: false
-
     MediaPanel {
         barWindow: bar
         anchorItem: mediaPill
@@ -221,7 +219,7 @@ PanelWindow {
     CalendarPopup {
         barWindow: bar
         anchorItem: clockPill
-        shown: bar.calendarOpen
+        shown: BarState.calendarOpen
     }
 
     NetworkPanel {
