@@ -90,6 +90,22 @@ ShellRoot {
         }
     }
 
+    // `qs ipc call keepawake toggle` — Super+z in awesome. Suspends the
+    // xset blank/DPMS timers (and with them the idle lock) until toggled
+    // off; notifies through our own daemon for KDE-style feedback.
+    IpcHandler {
+        target: "keepawake"
+
+        function toggle(): void {
+            PowerConfig.keepAwake = !PowerConfig.keepAwake;
+            Quickshell.execDetached(["notify-send",
+                PowerConfig.keepAwake ? "Keep awake: ON" : "Keep awake: off",
+                PowerConfig.keepAwake
+                    ? "Screen blanking, locking and display-off disabled"
+                    : "Normal idle timeouts restored"]);
+        }
+    }
+
     // `qs ipc call notifs toggle` — Super+Shift+b in awesome
     IpcHandler {
         target: "notifs"

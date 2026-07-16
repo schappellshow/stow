@@ -75,6 +75,9 @@ M.globalkeys = gears.table.join(
     awful.key({ modkey }, "v",
         function() awful.spawn("qs ipc call calendar toggle") end,
         { description = "calendar", group = "misc" }),
+    awful.key({ modkey }, "z",
+        function() awful.spawn("qs ipc call keepawake toggle") end,
+        { description = "toggle keep awake", group = "misc" }),
 
     -- ── Focus (directional, vim-style; crosses monitor edges) ─────────────
     awful.key({ modkey }, "h",
