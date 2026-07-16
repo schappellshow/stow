@@ -45,6 +45,11 @@ run_once({ "greenclip", "daemon" })
 -- xsettingsd propagates GTK/icon theme to running apps
 run_once({ "xsettingsd" })
 
+-- Secret Service (org.freedesktop.secrets) for apps that vault
+-- credentials (Mailspring, browsers, ...): ksecretd, KWallet's KF6
+-- secrets daemon — the deliberate KDE exception on this setup.
+run_once({ "/usr/bin/ksecretd" })
+
 -- Polkit authentication agent (lxqt-policykit: Qt-native, no KDE deps).
 -- [l] bracket trick: without it, pgrep -f matches this guard's own shell
 -- command line and the agent never starts.
