@@ -31,9 +31,17 @@ Singleton {
             // contains the command string, so an unanchored -f pattern
             // matches itself and nothing ever spawns.
             const q = "'^" + e.command.replace(/'/g, "'\\''") + "'";
-            Quickshell.execDetached(["sh", "-c",
-                "pgrep -u $USER -f " + q + " >/dev/null || (" +
-                e.command + " >/dev/null 2>&1 &)"]);
+            let guarded = "pgrep -u $USER -f " + q + " >/dev/null || (" +
+                e.command + " >/dev/null 2>&1 &)";
+            // Delay is relative to session start, not to other entries —
+            // each command backgrounds independently, so a later entry
+            // waiting on an earlier one (e.g. Proton Bridge before
+            // Mailspring) just needs a delay longer than the dependency
+            // takes to come up.
+            const delay = Number(e.delay) || 0;
+            if (delay > 0)
+                guarded = "sleep " + delay + "; " + guarded;
+            Quickshell.execDetached(["sh", "-c", guarded]);
         }
     }
 

@@ -119,6 +119,21 @@ awful.rules.rules = {
         }
     },
 
+    -- Fallback for the same window when it maps with class=nil (WM_CLASS
+    -- not set yet — same quirk as the bar's class-nil rule below): match
+    -- on its title instead, or it falls through to the default rule and
+    -- tiles at nearly full-screen instead of floating at 840x560.
+    {
+        rule = { name = "Shell Settings" },
+        properties = {
+            floating          = true,
+            placement         = awful.placement.centered,
+            titlebars_enabled = false,
+            width             = 840,
+            height            = 560,
+        }
+    },
+
     -- Quickshell shell surfaces (bar, popups) sometimes map before their
     -- WM_CLASS/dock type is set, so awesome manages them as ordinary
     -- clients: bordered, focusable on hover — the "outline around the
