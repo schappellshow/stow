@@ -41,7 +41,7 @@ awful.rules.rules = {
                 "Arandr", "Blueman-manager", "Gpick", "Kruler",
                 "MessageWin", "Sxiv", "Wpa_gui", "veromix",
                 "xtightvncviewer", "Pavucontrol", "Nm-connection-editor",
-                "pavucontrol-qt", "flameshot",
+                "pavucontrol-qt", "flameshot", "Proton Mail Bridge",
             },
             name  = { "Event Tester" },
             role  = { "AlarmWindow", "ConfigManager", "pop-up" },
