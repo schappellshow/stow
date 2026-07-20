@@ -18,9 +18,46 @@ Scope {
     // Missing cache (or a monitor without one) falls back to plain dim.
     property var bgs: ({})
 
+    // name -> absolute icon file. Qt's icon-theme lookup finds nothing under
+    // QT_QPA_PLATFORMTHEME=xdgdesktopportal (only the qt6ct and kde platform
+    // themes feed Qt a theme name), so Quickshell.iconPath() returns an
+    // image://icon URL that fails to load. Resolve the files ourselves
+    // instead, walking the active theme then breeze, which is what the
+    // theme's own Inherits= chain would reach anyway.
+    property var icons: ({})
+
+    Component.onCompleted: iconProbe.running = true
+
     onShownChanged: {
-        if (shown)
+        if (shown) {
             bgProbe.running = true;
+            iconProbe.running = true;   // pick up an icon-theme change
+        }
+    }
+
+    Process {
+        id: iconProbe
+        command: ["sh", "-c",
+            'theme=$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "\'"); ' +
+            'for n in system-lock-screen system-log-out system-suspend system-reboot system-shutdown; do ' +
+            '  for d in "$HOME/.local/share/icons/$theme" "/usr/share/icons/$theme" ' +
+            '           /usr/share/icons/breeze-dark /usr/share/icons/breeze; do ' +
+            '    [ -d "$d" ] || continue; ' +
+            '    p=$(find -L "$d" -name "$n.svg" 2>/dev/null | head -1); ' +
+            '    [ -n "$p" ] && { echo "$n $p"; break; }; ' +
+            '  done; ' +
+            'done']
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const map = {};
+                for (const line of text.trim().split("\n")) {
+                    const i = line.indexOf(" ");
+                    if (i > 0)
+                        map[line.slice(0, i)] = line.slice(i + 1);
+                }
+                root.icons = map;
+            }
+        }
     }
 
     Process {
@@ -42,18 +79,40 @@ Scope {
         }
     }
 
+    // Icons come from the icon theme: Vivid-Glassy-Dark-Icons has no session
+    // icons of its own but inherits breeze-dark → breeze → Adwaita → hicolor,
+    // so these standard freedesktop names resolve to breeze's.
+    // `key` is the single-press shortcut. Shut Down is P (for power off)
+    // because Suspend already owns S.
     readonly property var actions: [
-        { label: "Lock",      color: Theme.blue,   cmd: ["loginctl", "lock-session"] },
-        { label: "Log Out",   color: Theme.teal,   cmd: ["awesome-client", "awesome.quit()"] },
-        { label: "Suspend",   color: Theme.gold,   cmd: ["systemctl", "suspend"] },
-        { label: "Restart",   color: Theme.orange, cmd: ["systemctl", "reboot"] },
-        { label: "Shut Down", color: Theme.red,    cmd: ["systemctl", "poweroff"] }
+        { label: "Lock",      key: "l", icon: "system-lock-screen",
+          color: Theme.blue,   cmd: ["loginctl", "lock-session"] },
+        { label: "Log Out",   key: "o", icon: "system-log-out",
+          color: Theme.teal,   cmd: ["awesome-client", "awesome.quit()"] },
+        { label: "Suspend",   key: "s", icon: "system-suspend",
+          color: Theme.gold,   cmd: ["systemctl", "suspend"] },
+        { label: "Restart",   key: "r", icon: "system-reboot",
+          color: Theme.orange, cmd: ["systemctl", "reboot"] },
+        { label: "Shut Down", key: "p", icon: "system-shutdown",
+          color: Theme.red,    cmd: ["systemctl", "poweroff"] }
     ]
 
     function activate(index) {
         const cmd = actions[index].cmd;
         shown = false;
         Quickshell.execDetached(cmd);
+    }
+
+    // Returns the action index for a typed character, or -1
+    function indexForKey(text) {
+        const k = (text || "").toLowerCase();
+        if (k === "")
+            return -1;
+        for (let i = 0; i < actions.length; i++) {
+            if (actions[i].key === k)
+                return i;
+        }
+        return -1;
     }
 
     IpcHandler {
@@ -129,6 +188,17 @@ Scope {
                     Keys.onReturnPressed: root.activate(root.selected)
                     Keys.onEnterPressed: root.activate(root.selected)
 
+                    // Single-key shortcuts (l/o/s/r/p). Only accept the event
+                    // on a match, so Escape/arrows/Enter still reach their
+                    // own handlers above.
+                    Keys.onPressed: event => {
+                        const i = root.indexForKey(event.text);
+                        if (i >= 0) {
+                            root.activate(i);
+                            event.accepted = true;
+                        }
+                    }
+
                     Row {
                         anchors.centerIn: parent
                         spacing: 24
@@ -160,9 +230,29 @@ Scope {
                                         ColorAnimation { duration: 100 }
                                     }
 
+                                    Image {
+                                        id: iconImg
+                                        anchors.centerIn: parent
+                                        width: 48
+                                        height: 48
+                                        source: root.icons[entry.modelData.icon] !== undefined
+                                            ? "file://" + root.icons[entry.modelData.icon] : ""
+                                        // SVGs rasterise at sourceSize, so ask
+                                        // for 2x to stay crisp
+                                        sourceSize.width: 96
+                                        sourceSize.height: 96
+                                        fillMode: Image.PreserveAspectFit
+                                        asynchronous: true
+                                    }
+
+                                    // Degraded fallback if no icon file was
+                                    // found: show the shortcut key, which
+                                    // (unlike the label's first letter) is
+                                    // unique per action.
                                     Text {
                                         anchors.centerIn: parent
-                                        text: entry.modelData.label.charAt(0)
+                                        visible: iconImg.status !== Image.Ready
+                                        text: entry.modelData.key.toUpperCase()
                                         font.family: Theme.fontFamily
                                         font.bold: true
                                         font.pointSize: 30
@@ -177,9 +267,15 @@ Scope {
                                     }
                                 }
 
+                                // Label plus a muted hint for the single-key
+                                // shortcut, so the bindings are discoverable
                                 Text {
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     text: entry.modelData.label
+                                        + '  <font color="' + Theme.muted + '">'
+                                        + entry.modelData.key.toUpperCase()
+                                        + '</font>'
+                                    textFormat: Text.StyledText
                                     font.family: Theme.fontFamily
                                     font.pointSize: 11
                                     color: Theme.text
