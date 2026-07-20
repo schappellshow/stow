@@ -47,6 +47,8 @@ Singleton {
     // Notifications
     property alias notifTimeoutMs: adapter.notifTimeoutMs
     property alias doNotDisturb: adapter.doNotDisturb
+    // "top-right" | "top-left" | "bottom-right" | "bottom-left"
+    property alias notifPosition: adapter.notifPosition
 
     // Displays (xrandr args, replayed at login)
     property alias displayCmd: adapter.displayCmd
@@ -117,6 +119,7 @@ Singleton {
 
             property int notifTimeoutMs: 6000
             property bool doNotDisturb: false
+            property string notifPosition: "top-right"
 
             property string displayCmd: ""
 

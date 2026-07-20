@@ -8,22 +8,34 @@ import "../common"
 Scope {
     id: root
 
-    Variants {
-        // Same screen selection as the bar: named screen or all
-        model: {
-            const match = Quickshell.screens.filter(
-                s => s.name === Settings.barScreen);
-            return match.length > 0 ? match : Quickshell.screens;
-        }
+    // Pin to the bar's screen with a single window bound to a stable
+    // target — the same pattern as NotificationPopups. The old
+    // `Variants { screen: modelData }` approach landed the panel on the
+    // wrong monitor (a filtered-array binding whose element quickshell
+    // resolved to the wrong output); a single fixed screen is reliable.
+    property var targetScreen: null
 
-        PanelWindow {
-            required property var modelData
+    function updateTargetScreen() {
+        const match = Quickshell.screens.filter(
+            s => s.name === Settings.barScreen);
+        root.targetScreen = match.length > 0 ? match[0] : Quickshell.screens[0];
+    }
 
-            screen: modelData
-            visible: NotifHistory.centerOpen
-            color: "transparent"
-            exclusionMode: ExclusionMode.Ignore
-            aboveWindows: true
+    Component.onCompleted: updateTargetScreen()
+
+    Connections {
+        target: Settings
+        function onBarScreenChanged() { root.updateTargetScreen(); }
+    }
+
+    PanelWindow {
+        id: win
+
+        screen: root.targetScreen
+        visible: NotifHistory.centerOpen
+        color: "transparent"
+        exclusionMode: ExclusionMode.Ignore
+        aboveWindows: true
 
             anchors {
                 top: true
@@ -166,7 +178,10 @@ Scope {
                             y: 10
                             width: 28
                             height: 28
-                            visible: entry.iconSrc !== ""
+                            // Hide cleanly rather than show a broken-image
+                            // glyph for entries saved before NotifHistory
+                            // stopped persisting ephemeral image handles
+                            visible: entry.iconSrc !== "" && status !== Image.Error
                             source: entry.iconSrc
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
@@ -235,4 +250,3 @@ Scope {
             }
         }
     }
-}

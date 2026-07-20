@@ -22,34 +22,65 @@ Scope {
         }
     }
 
-    Variants {
-        // Popups on the bar's screen (all quickshell windows need an
-        // explicit screen under UseQApplication, or they lose their dock
-        // anchoring and land at 0,0 on the first monitor)
-        model: {
-            const match = Quickshell.screens.filter(
-                s => s.name === Settings.barScreen);
-            return match.length > 0 ? match : [Quickshell.screens[0]];
-        }
+    // Popups on the bar's screen (all quickshell windows need an explicit
+    // screen under UseQApplication, or they lose their dock anchoring and
+    // land at 0,0 on the first monitor). Only one popup stack is ever
+    // needed, so this binds directly instead of going through Variants —
+    // Variants recreates its whole window (tearing down every card and
+    // its Timer) whenever the model array is reassigned, and a plain
+    // `Quickshell.screens.filter(...)` produces a brand-new array on every
+    // reactive re-evaluation even when the matched screen hasn't changed,
+    // which was silently destroying and rebuilding the popups mid-display.
+    property var targetScreen: null
+
+    function updateTargetScreen() {
+        const match = Quickshell.screens.filter(
+            s => s.name === Settings.barScreen);
+        root.targetScreen = match.length > 0 ? match[0] : Quickshell.screens[0];
+    }
+
+    Component.onCompleted: updateTargetScreen()
+
+    // Only recompute on an actual Settings.barScreen change — a plain
+    // reactive `Quickshell.screens.filter(...)` binding re-evaluates (and
+    // hands PanelWindow a brand-new array/object) on every unrelated
+    // signal too, which was tearing down and rebuilding the popup window
+    // and its cards mid-display.
+    Connections {
+        target: Settings
+        function onBarScreenChanged() { root.updateTargetScreen(); }
+    }
 
     PanelWindow {
         id: win
 
-        required property var modelData
-        screen: modelData
+        screen: root.targetScreen
 
         visible: server.trackedNotifications.values.length > 0
               && !Settings.doNotDisturb
 
+        readonly property bool posTop: !Settings.notifPosition.startsWith("bottom")
+        readonly property bool posLeft: Settings.notifPosition.endsWith("left")
+
         anchors {
-            top: true
-            right: true
+            top: win.posTop
+            bottom: !win.posTop
+            left: win.posLeft
+            right: !win.posLeft
         }
         margins {
             top: 12
+            bottom: 12
+            left: 12
             right: 12
         }
         exclusionMode: ExclusionMode.Ignore
+        // Stack deterministically above other windows. Without this the
+        // popup competes in the normal stack, which is invisible on a
+        // near-empty screen (the single-monitor laptop) but flickers on a
+        // busy output (the desktop's primary DP2) as the compositor keeps
+        // restacking it against the windows underneath.
+        aboveWindows: true
         implicitWidth: 360
         implicitHeight: Math.max(1, stack.implicitHeight)
         color: "transparent"
@@ -88,12 +119,22 @@ Scope {
                         spacing: 10
 
                         Image {
+                            id: icon
                             width: 32
                             height: 32
-                            visible: card.iconSrc !== ""
+                            // Some apps (Slack, ...) send raw icon pixmap
+                            // data rather than a themed name; Quickshell
+                            // serves that through an internal handle that
+                            // can die mid-load if the notification is
+                            // quickly replaced (a common Slack pattern for
+                            // unread-count updates) — load synchronously
+                            // to close that race, and hide cleanly rather
+                            // than show a broken-image glyph if it still
+                            // misses.
+                            visible: card.iconSrc !== "" && status !== Image.Error
                             source: card.iconSrc
                             fillMode: Image.PreserveAspectFit
-                            asynchronous: true
+                            asynchronous: false
                             sourceSize.width: 64
                         }
 
@@ -140,16 +181,32 @@ Scope {
                         onClicked: card.modelData.dismiss()
                     }
 
+                    // Per the notification spec, expireTimeout is -1 ("use
+                    // the server's default"), 0 ("never auto-expire — wait
+                    // for the app or user to dismiss"), or a positive ms
+                    // count. We were treating 0 as "use our default" (so
+                    // apps requesting persistence still got timed out) and
+                    // passing tiny app-requested values straight through —
+                    // some apps ask for a few hundred ms, which reads as a
+                    // flicker of the border with no time to see the text.
+                    // Clamp any explicit positive request to a readable
+                    // floor instead of trusting it verbatim.
+                    readonly property int popupInterval: {
+                        const t = card.modelData.expireTimeout;
+                        if (t === 0)
+                            return -1;
+                        if (t > 0)
+                            return Math.max(t, 3000);
+                        return Settings.notifTimeoutMs;
+                    }
+
                     Timer {
-                        interval: card.modelData.expireTimeout > 0
-                                ? card.modelData.expireTimeout
-                                : Settings.notifTimeoutMs
-                        running: true
+                        interval: card.popupInterval > 0 ? card.popupInterval : 1
+                        running: card.popupInterval > 0
                         onTriggered: card.modelData.expire()
                     }
                 }
             }
         }
-    }
     }
 }

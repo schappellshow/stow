@@ -14,11 +14,20 @@ Singleton {
     property bool centerOpen: false
 
     function add(n) {
+        // Quickshell serves raw notification pixmap data (the "image"
+        // hint — Slack avatars, etc.) through an internal
+        // image://qsimage/<id>/<serial> handle that's only valid for the
+        // live Notification object's lifetime. Persisting that string in
+        // history means the entry's picture starts failing to load the
+        // moment the real notification expires or gets replaced — only
+        // keep it if it's a real, stable reference; a themed appIcon name
+        // remains resolvable indefinitely so it's always safe to keep.
+        const stableImage = (n.image && !n.image.startsWith("image://")) ? n.image : "";
         entries.insert(0, {
             appName: n.appName || "",
             summary: n.summary || "",
             body: n.body || "",
-            image: n.image || "",
+            image: stableImage,
             appIcon: n.appIcon || "",
             time: new Date().toLocaleTimeString(Qt.locale(), "hh:mm")
         });

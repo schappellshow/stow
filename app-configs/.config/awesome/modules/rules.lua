@@ -25,8 +25,17 @@ awful.rules.rules = {
             -- existing screen then, or restarts scatter all windows onto
             -- whichever screen happened to be "focused".
             screen            = function(c)
-                return awesome.startup and c.screen
-                    or awful.screen.focused({ client = true })
+                -- Quickshell surfaces (notification popups + center, OSD,
+                -- ...) advertise _NET_WM_WINDOW_TYPE_NORMAL alongside DOCK,
+                -- so awesome manages them as clients. They position
+                -- themselves on a specific output (e.g. the bar screen), so
+                -- keep them there instead of yanking them to the focused
+                -- screen — that was landing notifications on the wrong
+                -- monitor, floated mid-screen.
+                if awesome.startup or c.name == "quickshell" then
+                    return c.screen
+                end
+                return awful.screen.focused({ client = true })
             end,
             placement         = awful.placement.no_overlap + awful.placement.no_offscreen,
             titlebars_enabled = false,   -- no titlebars by default (Hyprland style)
