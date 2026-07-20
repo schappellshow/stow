@@ -48,7 +48,10 @@ run_once({ "xsettingsd" })
 -- Secret Service (org.freedesktop.secrets) for apps that vault
 -- credentials (Mailspring, browsers, ...): ksecretd, KWallet's KF6
 -- secrets daemon — the deliberate KDE exception on this setup.
-run_once({ "/usr/bin/ksecretd" })
+-- Not run_once: kwallet-pam leaves a bus-less `ksecretd --pam-login`
+-- running that registers nothing but satisfies any pgrep guard, so the
+-- script checks D-Bus name ownership instead (see ensure-secret-service).
+awful.spawn.with_shell(os.getenv("HOME") .. "/.local/bin/ensure-secret-service")
 
 -- Polkit authentication agent (lxqt-policykit: Qt-native, no KDE deps).
 -- [l] bracket trick: without it, pgrep -f matches this guard's own shell
