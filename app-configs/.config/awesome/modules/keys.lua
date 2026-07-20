@@ -3,6 +3,26 @@ local gears         = require("gears")
 local hotkeys_popup = require("awful.hotkeys_popup")
 require("awful.hotkeys_popup.keys")
 
+-- The cheatsheet prints raw X keysyms, so hardware keys show up as
+-- "XF86MonBrightnessUp". Build the default popup ourselves (show_help
+-- creates it lazily, so this must run before the first Super+s) and add
+-- readable labels on top of awesome's built-in ones.
+-- Note: the require above already builds default_widget (it registers the
+-- bundled app hotkeys through it), so create one only as a fallback and
+-- always apply the labels — guarding the whole block on "not
+-- default_widget" silently skips them.
+local hotkeys_widget = require("awful.hotkeys_popup.widget")
+if not hotkeys_widget.default_widget then
+    hotkeys_widget.default_widget = hotkeys_widget.new()
+end
+for keysym, label in pairs({
+    XF86AudioMute         = "Mute",
+    XF86MonBrightnessUp   = "Bright+",
+    XF86MonBrightnessDown = "Bright-",
+}) do
+    hotkeys_widget.default_widget.labels[keysym] = label
+end
+
 local modkey = "Mod4"
 
 local M = {}
@@ -181,13 +201,23 @@ M.globalkeys = gears.table.join(
         function() awful.spawn("qs ipc call audio lower") end,
         { description = "volume down", group = "media" }),
 
-    -- Hardware volume/media keys (aliases)
+    -- Hardware media keys (the Fn row). These duplicate the Ctrl chords
+    -- above, so they carry no description: a key without one still works
+    -- but stays out of the Super+s cheatsheet, which otherwise listed
+    -- every function twice under an unreadable "XF86Audio..." label.
     awful.key({ }, "XF86AudioRaiseVolume",
-        function() awful.spawn("qs ipc call audio raise") end,
-        { description = "volume up", group = "media" }),
+        function() awful.spawn("qs ipc call audio raise") end),
     awful.key({ }, "XF86AudioLowerVolume",
-        function() awful.spawn("qs ipc call audio lower") end,
-        { description = "volume down", group = "media" }),
+        function() awful.spawn("qs ipc call audio lower") end),
+    awful.key({ }, "XF86AudioPlay",
+        function() awful.spawn("playerctl play-pause") end),
+    awful.key({ }, "XF86AudioPrev",
+        function() awful.spawn("playerctl previous") end),
+    awful.key({ }, "XF86AudioNext",
+        function() awful.spawn("playerctl next") end),
+
+    -- These have no chord equivalent, so they stay documented — the
+    -- labels table below renders them as Mute / Bright+ / Bright-.
     awful.key({ }, "XF86AudioMute",
         function() awful.spawn("qs ipc call audio muteToggle") end,
         { description = "mute", group = "media" }),
@@ -198,16 +228,7 @@ M.globalkeys = gears.table.join(
         { description = "brightness up", group = "media" }),
     awful.key({ }, "XF86MonBrightnessDown",
         function() awful.spawn("qs ipc call brightness down") end,
-        { description = "brightness down", group = "media" }),
-    awful.key({ }, "XF86AudioPlay",
-        function() awful.spawn("playerctl play-pause") end,
-        { description = "play/pause", group = "media" }),
-    awful.key({ }, "XF86AudioPrev",
-        function() awful.spawn("playerctl previous") end,
-        { description = "previous track", group = "media" }),
-    awful.key({ }, "XF86AudioNext",
-        function() awful.spawn("playerctl next") end,
-        { description = "next track", group = "media" })
+        { description = "brightness down", group = "media" })
 )
 
 -- Tag number bindings (Super+[1-9], Super+Shift+[1-9], Super+Ctrl+[1-9])
