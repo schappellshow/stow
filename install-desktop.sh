@@ -25,6 +25,7 @@ sudo dnf install --allowerasing -y \
     xsettingsd feh scrot flameshot playerctl \
     xdg-desktop-portal xdg-desktop-portal-gtk plasma-workspace \
     lxqt-policykit i3lock-color brightnessctl \
+    kf6-kwallet kwallet-pam socat \
     pavucontrol-qt blueman networkmanager-applet thunar \
     borgbackup bup \
     ghostty micro \
