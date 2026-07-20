@@ -16,7 +16,7 @@ font="Hack"
 loginbox=232627cc
 loginshadow=00000000
 locktext="Type password to unlock..."
-time_format="%H:%M"
+time_format="%I:%M %p"
 
 ringcolor=2080bbff
 insidecolor=00000000
