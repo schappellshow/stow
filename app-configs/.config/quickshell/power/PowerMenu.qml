@@ -216,13 +216,17 @@ Scope {
 
                                 spacing: 10
 
+                                // Circle rather than a rounded square, to suit
+                                // the round icons; transparent at rest so the
+                                // accent reads as a highlight ring around the
+                                // icon on hover/selection.
                                 Rectangle {
                                     width: 96
                                     height: 96
-                                    radius: Theme.radius
+                                    radius: width / 2
                                     anchors.horizontalCenter: parent.horizontalCenter
                                     color: hover.hovered || entry.current
-                                        ? entry.modelData.color : Theme.surfaceAlt
+                                        ? entry.modelData.color : "transparent"
                                     border.width: entry.current ? 2 : 0
                                     border.color: Theme.text
 

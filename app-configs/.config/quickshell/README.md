@@ -90,8 +90,17 @@ settings-app toggle. That script pushes the mode to every channel apps use
 for the "system" theme: GSettings color-scheme/gtk-theme (read by the GTK
 portal backend, which answers Electron apps like Slack — see
 `.config/xdg-desktop-portal/portals.conf` for the routing), kdeglobals via
-plasma-apply-colorscheme (Qt/KDE apps), and xsettingsd + gtk settings.ini
-(GTK apps; files are created if missing, for fresh machines).
+plasma-apply-colorscheme, qt6ct.conf (Qt apps), and xsettingsd + gtk
+settings.ini (GTK apps). Files are created if missing, for fresh machines.
+
+Qt apps read their palette *and* icon theme through
+`QT_QPA_PLATFORMTHEME=qt6ct`, set in the stowed `shell/.xprofile`. The
+xdgdesktopportal platform theme was tried first and rejected: it supplies a
+color scheme but no icon theme, so Qt's icon lookup fails and
+`Quickshell.iconPath()` returns `image://icon` URLs that never load. qt6ct
+gives both, at the cost of reading a static file — hence system-theme-apply
+rewriting its `color_scheme_path` (darker/airy) on each toggle. `qt6ct.conf`
+is intentionally not tracked in git, since it is rewritten at runtime.
 
 ## Media player
 

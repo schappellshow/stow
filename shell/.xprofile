@@ -2,8 +2,13 @@
 # session inherits these.
 
 # Qt apps outside KDE (quickshell's tray menus, pavucontrol-qt, ...) have
-# no platform theme under awesome and default to light Fusion. The
-# xdgdesktopportal theme asks the portal for the color scheme — our GTK
-# portal backend answers from the GSettings that system-theme-apply
-# writes, so Qt follows the shell's dark/light mode.
-export QT_QPA_PLATFORMTHEME=xdgdesktopportal
+# no platform theme under awesome and default to light Fusion.
+#
+# qt6ct rather than xdgdesktopportal: the portal theme supplies a color
+# scheme but never an icon theme, so Qt's icon lookup finds nothing and
+# Quickshell.iconPath() returns image://icon URLs that fail to load.
+# qt6ct feeds Qt both. The trade-off is that it reads a static config
+# instead of following the portal live, so system-theme-apply rewrites
+# that file's color scheme on every dark/light toggle (it also creates
+# the file, so this needs no tracked copy).
+export QT_QPA_PLATFORMTHEME=qt6ct

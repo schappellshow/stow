@@ -3,6 +3,7 @@
 #   gsettings  → read by xdg-desktop-portal-gtk, which answers Electron and
 #                libadwaita apps (portal routing: .config/xdg-desktop-portal/)
 #   kdeglobals → Qt/KDE apps (via plasma-apply-colorscheme)
+#   qt6ct.conf → Qt apps, via QT_QPA_PLATFORMTHEME=qt6ct (see ~/.xprofile)
 #   xsettingsd + gtk settings.ini → running/starting GTK apps
 # Files are created if missing, so this works on a freshly-stowed machine.
 # Called by quickshell's SystemTheme service on every dark-mode change.
@@ -10,8 +11,8 @@ set -u
 
 mode="${1:-dark}"
 case "$mode" in
-    dark)  scheme=prefer-dark;  gtk_theme=Breeze-Dark; kde_scheme=BreezeDark;  prefer_dark=true ;;
-    light) scheme=prefer-light; gtk_theme=Breeze;      kde_scheme=BreezeLight; prefer_dark=false ;;
+    dark)  scheme=prefer-dark;  gtk_theme=Breeze-Dark; kde_scheme=BreezeDark;  prefer_dark=true; qt_scheme=darker ;;
+    light) scheme=prefer-light; gtk_theme=Breeze;      kde_scheme=BreezeLight; prefer_dark=false; qt_scheme=airy ;;
     *) echo "usage: system-theme-apply dark|light" >&2; exit 1 ;;
 esac
 
@@ -22,6 +23,38 @@ command -v gsettings >/dev/null && {
 
 command -v plasma-apply-colorscheme >/dev/null \
     && plasma-apply-colorscheme "$kde_scheme" >/dev/null 2>&1
+
+# qt6ct: the platform theme Qt apps read (quickshell's tray menus,
+# pavucontrol-qt, ...). It is a static file, so the toggle has to rewrite
+# the color scheme here. Deliberately NOT tracked in the stow repo: it is
+# rewritten at runtime, and a tracked copy would be dirtied on every
+# toggle (same reasoning as quickshell's settings.json).
+qt6ct="$HOME/.config/qt6ct/qt6ct.conf"
+qt_scheme_path="/usr/share/qt6ct/colors/${qt_scheme}.conf"
+if [ -f "$qt6ct" ]; then
+    # --follow-symlinks so an existing symlink is not replaced by a file
+    if grep -q '^color_scheme_path=' "$qt6ct"; then
+        sed -i --follow-symlinks \
+            "s|^color_scheme_path=.*|color_scheme_path=$qt_scheme_path|" "$qt6ct"
+    else
+        sed -i --follow-symlinks \
+            "/^\[Appearance\]/a color_scheme_path=$qt_scheme_path" "$qt6ct"
+    fi
+    grep -q '^custom_palette=' "$qt6ct" \
+        || sed -i --follow-symlinks '/^\[Appearance\]/a custom_palette=true' "$qt6ct"
+else
+    mkdir -p "${qt6ct%/*}"
+    # breeze-dark is the safe default icon theme: it ships with the KF6
+    # icons package, unlike whatever theme a given machine has installed
+    cat >"$qt6ct" <<EOF
+[Appearance]
+color_scheme_path=$qt_scheme_path
+custom_palette=true
+icon_theme=breeze-dark
+standard_dialogs=default
+style=Breeze
+EOF
+fi
 
 # xsettingsd: edit the existing (often KDE-generated) config, or seed one
 xs="$HOME/.config/xsettingsd/xsettingsd.conf"

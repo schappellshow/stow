@@ -26,6 +26,7 @@ sudo dnf install --allowerasing -y \
     xdg-desktop-portal xdg-desktop-portal-gtk plasma-workspace \
     lxqt-policykit i3lock-color brightnessctl \
     kf6-kwallet kwallet-pam socat \
+    qt6ct kf6-breeze-icons \
     pavucontrol-qt blueman networkmanager-applet thunar \
     borgbackup bup \
     ghostty micro \
