@@ -19,7 +19,14 @@ Singleton {
         if (Settings.wallpaperPath === "")
             return;
         const p = expand(Settings.wallpaperPath);
-        Quickshell.execDetached(["feh", "--bg-fill", p]);
+        // feh assigns one image per monitor, so a single path stretches
+        // across the whole X screen on a multi-head setup. Repeat it once
+        // per screen to fill each monitor individually (a 1-screen laptop
+        // is unaffected — it just gets the single argument as before).
+        const args = ["feh", "--bg-fill"];
+        for (let i = 0; i < Math.max(1, Quickshell.screens.length); i++)
+            args.push(p);
+        Quickshell.execDetached(args);
         // Rebuild the lock screen's blurred/dimmed cache to match
         // (betterlockscreen lives in ~/.local/bin; skip silently if absent)
         Quickshell.execDetached(["sh", "-c",

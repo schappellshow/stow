@@ -32,6 +32,11 @@ command -v plasma-apply-colorscheme >/dev/null \
 qt6ct="$HOME/.config/qt6ct/qt6ct.conf"
 qt_scheme_path="/usr/share/qt6ct/colors/${qt_scheme}.conf"
 if [ -f "$qt6ct" ]; then
+    # A qt6ct.conf left by qt6ct's own GUI can have no [Appearance] section
+    # at all (just a [SettingsWindow] geometry). Every insert below anchors
+    # on that header, so without it they silently no-op and Qt keeps its
+    # default light palette — seed the section first.
+    grep -q '^\[Appearance\]' "$qt6ct" || printf '\n[Appearance]\nicon_theme=breeze-dark\nstandard_dialogs=default\nstyle=Breeze\n' >>"$qt6ct"
     # --follow-symlinks so an existing symlink is not replaced by a file
     if grep -q '^color_scheme_path=' "$qt6ct"; then
         sed -i --follow-symlinks \

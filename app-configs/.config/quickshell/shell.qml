@@ -18,6 +18,7 @@ ShellRoot {
     // doesn't persist across logins — re-apply everything, idempotently.
     // init() also forces the lazy singletons to life.
     Component.onCompleted: {
+        updateBarScreens();
         SystemTheme.apply();
         Wallpaper.init();
         DisplayConfig.init();
@@ -29,14 +30,30 @@ ShellRoot {
         BarSpace.init();
     }
 
+    // One bar on Settings.barScreen; if it's unset or that output isn't
+    // connected (laptop away from the dock), bars on every screen.
+    //
+    // Held in a property rather than bound live: a
+    // `Quickshell.screens.filter(...)` expression hands Variants a brand
+    // new array every time it re-evaluates (which an awesome restart
+    // triggers), and Variants then re-points the existing window at a
+    // different screen — the bar jumped from DP2 to DP1 on Super+Ctrl+R,
+    // same window id, and the notification surfaces had the same bug.
+    property var barScreens: []
+
+    function updateBarScreens() {
+        const match = Quickshell.screens.filter(
+            s => s.name === Settings.barScreen);
+        barScreens = match.length > 0 ? match : Quickshell.screens;
+    }
+
+    Connections {
+        target: Settings
+        function onBarScreenChanged() { updateBarScreens(); }
+    }
+
     Variants {
-        // One bar on Settings.barScreen; if it's unset or that output isn't
-        // connected (laptop away from the dock), bars on every screen.
-        model: {
-            const match = Quickshell.screens.filter(
-                s => s.name === Settings.barScreen);
-            return match.length > 0 ? match : Quickshell.screens;
-        }
+        model: barScreens
         Bar {}
     }
 
