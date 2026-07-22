@@ -62,33 +62,32 @@ Scope {
         readonly property bool posTop: !Settings.notifPosition.startsWith("bottom")
         readonly property bool posLeft: Settings.notifPosition.endsWith("left")
 
-        anchors {
-            top: win.posTop
-            bottom: !win.posTop
-            left: win.posLeft
-            right: !win.posLeft
-        }
-        margins {
-            top: 12
-            bottom: 12
-            left: 12
-            right: 12
-        }
+        // Fixed full-height window so the compositor never sees a geometry
+        // change while a notification is up. A content-sized window
+        // oscillated between 1px and full height during the notification's
+        // own lifetime (a QML relayout quirk) — a violent flicker,
+        // especially bottom-anchored where the card jumped ~70px each
+        // frame. Cards sit in a corner-anchored Column inside; `mask`
+        // limits input to just the cards so clicks pass through the rest
+        // of the transparent strip. aboveWindows keeps it over other
+        // windows on the busy primary output.
+        anchors { top: true; bottom: true; left: win.posLeft; right: !win.posLeft }
         exclusionMode: ExclusionMode.Ignore
-        // Stack deterministically above other windows. Without this the
-        // popup competes in the normal stack, which is invisible on a
-        // near-empty screen (the single-monitor laptop) but flickers on a
-        // busy output (the desktop's primary DP2) as the compositor keeps
-        // restacking it against the windows underneath.
         aboveWindows: true
-        implicitWidth: 360
-        implicitHeight: Math.max(1, stack.implicitHeight)
+        implicitWidth: 384
         color: "transparent"
+        mask: Region { item: stack }
 
         Column {
             id: stack
-            width: parent.width
+            width: 360
             spacing: 8
+
+            anchors.top: win.posTop ? parent.top : undefined
+            anchors.bottom: win.posTop ? undefined : parent.bottom
+            anchors.left: win.posLeft ? parent.left : undefined
+            anchors.right: win.posLeft ? undefined : parent.right
+            anchors.margins: 12
 
             Repeater {
                 model: server.trackedNotifications
