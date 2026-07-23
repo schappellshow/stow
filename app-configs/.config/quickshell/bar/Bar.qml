@@ -198,6 +198,10 @@ PanelWindow {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
 
+            ScreenLockWidget {
+                anchors.horizontalCenter: parent.horizontalCenter
+            }
+
             Battery {
                 anchors.horizontalCenter: parent.horizontalCenter
             }

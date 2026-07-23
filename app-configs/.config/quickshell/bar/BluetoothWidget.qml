@@ -32,14 +32,13 @@ Item {
             color: Theme.muted
         }
 
+        // fa-bluetooth-b rune (U+F294): blue when a device is connected,
+        // gray when the adapter is on but idle, dim when off.
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: !root.adapter || !root.adapter.enabled ? "off"
-                : root.connectedDevices.length > 0
-                    ? root.connectedDevices.length + "✓"
-                    : "on"
-            font.family: Theme.fontFamily
-            font.pointSize: 9
+            text: String.fromCodePoint(0xf294)
+            font.family: Theme.iconFont
+            font.pointSize: 10
             color: !root.adapter || !root.adapter.enabled ? Theme.muted
                  : root.connectedDevices.length > 0
                      ? Theme.accentBright : Theme.subtext

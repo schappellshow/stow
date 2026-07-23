@@ -30,7 +30,7 @@ sudo dnf install --allowerasing -y \
     pavucontrol-qt blueman networkmanager-applet thunar \
     borgbackup bup \
     ghostty micro \
-    fonts-ttf-hack noto-sans-fonts \
+    fonts-ttf-hack noto-sans-fonts fonts-ttf-nerd-jetbrains-mono \
     stow git curl \
     autoconf automake libtool slibtool gettext intltool pkgconf gcc make cmake \
     lib64x11-devel lib64xxf86vm-devel lib64xcb-devel lib64xcb-util-devel \

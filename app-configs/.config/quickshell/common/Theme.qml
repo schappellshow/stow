@@ -35,5 +35,9 @@ Singleton {
     readonly property color urgent:       red
 
     readonly property string fontFamily: "Hack"
+    // Nerd Font for icon glyphs (fonts-ttf-nerd-jetbrains-mono). Only used
+    // for icons — text stays in Hack. Glyphs are monochrome and honour
+    // QML `color`, unlike emoji.
+    readonly property string iconFont: "JetBrainsMono Nerd Font"
     readonly property int radius: 10
 }

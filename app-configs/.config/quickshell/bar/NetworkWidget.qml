@@ -2,12 +2,19 @@ import QtQuick
 import Quickshell
 import "../common"
 
-// NET indicator: wifi shows signal %, ethernet shows ETH, disconnected "--".
+// NET indicator: icon reflects connection — ethernet port when wired, wifi
+// arcs when wireless (both blue), network-tree gray when disconnected.
 // Left-click: network popup. Right-click: nm-connection-editor.
 Item {
     id: root
 
     property bool panelOpen: false
+
+    // Nerd Font glyphs: md-ethernet (U+F0200, supplementary → fromCodePoint),
+    // fa-wifi (U+F1EB), fa-sitemap (U+F0E8, disconnected).
+    readonly property string glyph: !Network.connected ? ""
+        : Network.type === "wifi" ? ""
+        : String.fromCodePoint(0xf0200)
 
     visible: Settings.showNetwork
     implicitWidth: col.implicitWidth
@@ -29,14 +36,10 @@ Item {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: !Network.connected ? "--"
-                : Network.type === "ethernet" ? "ETH"
-                : Network.signalStrength + "%"
-            font.family: Theme.fontFamily
-            font.pointSize: 9
-            color: !Network.connected ? Theme.urgent
-                 : Network.type === "wifi" && Network.signalStrength < 40
-                     ? Theme.gold : Theme.subtext
+            text: root.glyph
+            font.family: Theme.iconFont
+            font.pointSize: 10
+            color: Network.connected ? Theme.accentBright : Theme.subtext
         }
     }
 

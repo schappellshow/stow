@@ -49,6 +49,12 @@ SettingsPage {
     }
 
     ToggleRow {
+        label: "Screen lock (auto-lock state)"
+        checked: Settings.showScreenLock
+        onToggled: value => Settings.showScreenLock = value
+    }
+
+    ToggleRow {
         label: "Volume"
         checked: Settings.showVolume
         onToggled: value => Settings.showVolume = value

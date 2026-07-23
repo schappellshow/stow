@@ -40,6 +40,7 @@ Singleton {
     property alias showVolume: adapter.showVolume
     property alias showNotifBell: adapter.showNotifBell
     property alias showSysMon: adapter.showSysMon
+    property alias showScreenLock: adapter.showScreenLock
 
     // System monitor popout (conky)
     property alias conkyConfig: adapter.conkyConfig
@@ -115,6 +116,7 @@ Singleton {
             property bool showVolume: true
             property bool showNotifBell: true
             property bool showSysMon: true
+            property bool showScreenLock: true
             property string conkyConfig: "~/.conky/titus_desktop.conkyrc"
 
             property int notifTimeoutMs: 6000
