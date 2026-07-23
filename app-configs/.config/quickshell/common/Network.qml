@@ -19,6 +19,13 @@ Singleton {
     // [{ name, ctype, active }] for the bar popup; refreshed on demand
     property var savedConnections: []
 
+    // Wi-Fi scan results: [{ ssid, signal, secured, active, known }], and
+    // the SSIDs we already have a saved profile for (→ no password needed).
+    property var wifiNetworks: []
+    property var knownWifiSsids: []
+    property bool scanning: false
+    property int scanTicks: 0
+
     function refresh() {
         statusProc.running = true;
         radioProc.running = true;
@@ -26,6 +33,67 @@ Singleton {
 
     function refreshConnections() {
         consProc.running = true;
+    }
+
+    // Rescan nearby Wi-Fi, then list. Rescan is async in NetworkManager and
+    // errors if requested too soon, so we fire it and read the (possibly
+    // updated) cache after a short delay either way.
+    function scan() {
+        scanning = true;
+        scanTicks = 0;
+        knownProc.running = true;
+        Quickshell.execDetached(["nmcli", "dev", "wifi", "rescan"]);
+        scanTimer.restart();
+    }
+
+    // ssid: connect, reusing a saved profile if password is empty; with a
+    // password, create/replace the profile. Array args → no shell quoting
+    // needed for SSIDs/passwords with spaces or specials.
+    function connectWifi(ssid, password) {
+        const args = ["nmcli", "dev", "wifi", "connect", ssid];
+        if (password && password.length > 0)
+            args.push("password", password);
+        Quickshell.execDetached(args);
+        settle.restart();
+        rescanListTimer.restart();
+    }
+
+    // nmcli -t escapes ':' and '\' in field values; split on unescaped ':'
+    function splitNmcli(line) {
+        const f = [];
+        let cur = "";
+        for (let i = 0; i < line.length; i++) {
+            const c = line.charAt(i);
+            if (c === "\\" && i + 1 < line.length)
+                cur += line.charAt(++i);
+            else if (c === ":") { f.push(cur); cur = ""; }
+            else cur += c;
+        }
+        f.push(cur);
+        return f;
+    }
+
+    // A rescan clears NM's cache then repopulates over a few seconds, so a
+    // single snapshot lands mid-scan; list a few times as it fills in.
+    Timer {
+        id: scanTimer
+        interval: 1600
+        repeat: true
+        onTriggered: {
+            wifiListProc.running = true;
+            root.scanTicks++;
+            if (root.scanTicks >= 3) {
+                stop();
+                root.scanning = false;
+            }
+        }
+    }
+
+    // After a connect, refresh the list so the active marker updates
+    Timer {
+        id: rescanListTimer
+        interval: 3000
+        onTriggered: wifiListProc.running = true
     }
 
     function toggleWifi() {
@@ -116,6 +184,57 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: root.wifiEnabled = text.trim() === "enabled"
         }
+    }
+
+    // SSIDs of saved Wi-Fi profiles (profile NAME can differ from SSID, so
+    // read the actual 802-11-wireless.ssid of each wireless connection)
+    Process {
+        id: knownProc
+        command: ["sh", "-c",
+            "nmcli -t -f NAME,TYPE connection show | while IFS=: read -r n t; do " +
+            "case \"$t\" in *wireless*) nmcli -g 802-11-wireless.ssid connection show \"$n\" 2>/dev/null;; esac; done"]
+        stdout: StdioCollector {
+            onStreamFinished:
+                root.knownWifiSsids = text.split("\n").map(s => s.trim()).filter(s => s !== "")
+        }
+    }
+
+    Process {
+        id: wifiListProc
+        command: ["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi"]
+        stdout: StdioCollector { onStreamFinished: root.parseWifi(text) }
+    }
+
+    function parseWifi(t) {
+        const idx = {};
+        const list = [];
+        for (const line of t.split("\n")) {
+            if (line === "")
+                continue;
+            const p = root.splitNmcli(line);
+            if (p.length < 4)
+                continue;
+            const ssid = p[1];
+            if (ssid === "")             // hidden network
+                continue;
+            const active = p[0] === "*";
+            const signal = parseInt(p[2]) || 0;
+            const secured = p[3] !== "" && p[3] !== "--";
+            if (idx[ssid] !== undefined) {        // dedup: keep strongest AP
+                const e = list[idx[ssid]];
+                e.active = e.active || active;
+                if (signal > e.signal)
+                    e.signal = signal;
+                continue;
+            }
+            idx[ssid] = list.length;
+            list.push({
+                ssid: ssid, signal: signal, secured: secured, active: active,
+                known: root.knownWifiSsids.indexOf(ssid) >= 0
+            });
+        }
+        list.sort((a, b) => b.signal - a.signal);
+        root.wifiNetworks = list;
     }
 
     Process {
