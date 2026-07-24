@@ -51,6 +51,29 @@ SettingsPage {
         onClicked: Network.scan()
     }
 
+    // Connect progress / failure (e.g. wrong password)
+    Text {
+        width: parent.width
+        visible: Network.connecting || Network.connectError !== ""
+        text: Network.connecting
+            ? "Connecting to " + Network.connectingSsid + "…"
+            : Network.connectError
+        wrapMode: Text.Wrap
+        font.family: Theme.fontFamily
+        font.pointSize: 8
+        color: Network.connectError !== "" ? Theme.urgent : Theme.subtext
+    }
+
+    // A successful connect hides the password field; a failure keeps it up
+    // (with the error above) so the password can be corrected and retried.
+    Connections {
+        target: Network
+        function onConnectingChanged() {
+            if (!Network.connecting && Network.connectError === "")
+                page.pendingSsid = "";
+        }
+    }
+
     Repeater {
         model: Network.wifiNetworks
 
@@ -125,10 +148,9 @@ SettingsPage {
         visible: page.pendingSsid !== ""
         label: "Password for " + page.pendingSsid
         placeholder: "Enter password, then press Enter"
-        onAccepted: value => {
-            Network.connectWifi(page.pendingSsid, value);
-            page.pendingSsid = "";
-        }
+        // keep the field up until the connect succeeds (see Connections
+        // above) so a wrong password can be corrected without re-tapping
+        onAccepted: value => Network.connectWifi(page.pendingSsid, value)
     }
 
     SectionLabel { text: "SAVED CONNECTIONS" }

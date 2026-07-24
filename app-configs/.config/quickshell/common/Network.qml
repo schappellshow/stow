@@ -26,6 +26,12 @@ Singleton {
     property bool scanning: false
     property int scanTicks: 0
 
+    // Connect feedback: connecting while nmcli runs, connectError set (and
+    // sticky) when it fails — a bad password is the usual cause.
+    property bool connecting: false
+    property string connectingSsid: ""
+    property string connectError: ""
+
     function refresh() {
         statusProc.running = true;
         radioProc.running = true;
@@ -50,12 +56,15 @@ Singleton {
     // password, create/replace the profile. Array args → no shell quoting
     // needed for SSIDs/passwords with spaces or specials.
     function connectWifi(ssid, password) {
-        const args = ["nmcli", "dev", "wifi", "connect", ssid];
+        connectError = "";
+        connecting = true;
+        connectingSsid = ssid;
+        // -w 20: bound nmcli's wait so a bad-password activation can't hang
+        const args = ["nmcli", "-w", "20", "dev", "wifi", "connect", ssid];
         if (password && password.length > 0)
             args.push("password", password);
-        Quickshell.execDetached(args);
-        settle.restart();
-        rescanListTimer.restart();
+        connectProc.command = args;
+        connectProc.running = true;
     }
 
     // nmcli -t escapes ':' and '\' in field values; split on unescaped ':'
@@ -203,6 +212,25 @@ Singleton {
         id: wifiListProc
         command: ["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi"]
         stdout: StdioCollector { onStreamFinished: root.parseWifi(text) }
+    }
+
+    Process {
+        id: connectProc
+        stderr: StdioCollector { id: connectErr }
+        onExited: (exitCode, exitStatus) => {
+            root.connecting = false;
+            if (exitCode === 0) {
+                root.connectError = "";
+                settle.restart();
+                rescanListTimer.restart();
+            } else {
+                // nmcli's own message is verbose; connecting to a secured
+                // network and getting a non-zero exit almost always means
+                // the password was wrong.
+                root.connectError = "Couldn't connect to \"" + root.connectingSsid
+                    + "\" — check the password and try again.";
+            }
+        }
     }
 
     function parseWifi(t) {
