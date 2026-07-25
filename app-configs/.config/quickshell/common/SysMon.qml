@@ -30,11 +30,21 @@ Singleton {
         // (own-window margin quirk), measured against awesome's geometry
         const x = Settings.barWidth + 19;
         const y = 20;
+        // cfg is passed as $1 (not interpolated) to avoid quoting issues.
+        // If the configured conkyrc is missing — e.g. a per-machine setting
+        // pointing at a file that only exists on another host — fall back to
+        // a shipped one so the toggle never silently no-ops.
         Quickshell.execDetached(["sh", "-c",
-            "if pgrep -u $USER -x conky >/dev/null; then killall conky; " +
-            "else cd \"$HOME/.conky\" 2>/dev/null; " +
-            "conky -c \"" + cfg + "\" -a top_left -x " + x + " -y " + y +
-            " >/dev/null 2>&1 & fi"]);
+            "if pgrep -u $USER -x conky >/dev/null; then killall conky; exit 0; fi; " +
+            "cfg=\"$1\"; " +
+            "for alt in \"$cfg\" \"$HOME/.conky/titus_laptop.conkyrc\" " +
+            "\"$HOME/.conky/titus_desktop.conkyrc\"; do " +
+            "  [ -f \"$alt\" ] && { cfg=\"$alt\"; break; }; done; " +
+            "[ -f \"$cfg\" ] || exit 1; " +
+            "cd \"$HOME/.conky\" 2>/dev/null; " +
+            "conky -c \"$cfg\" -a top_left -x " + x + " -y " + y +
+            " >/dev/null 2>&1 &",
+            "conky-toggle", cfg]);
         conkyRunning = !conkyRunning;
         confirm.restart();
     }
