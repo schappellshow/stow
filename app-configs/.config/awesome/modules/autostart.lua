@@ -45,6 +45,11 @@ run_once({ "greenclip", "daemon" })
 -- xsettingsd propagates GTK/icon theme to running apps
 run_once({ "xsettingsd" })
 
+-- Automount removable media (USB sticks, SD cards): udiskie watches
+-- udisks2 and mounts + notifies on insert. --no-tray keeps it headless;
+-- eject/unmount is available from Thunar's sidebar.
+run_once({ "udiskie", "--no-tray" })
+
 -- Secret Service (org.freedesktop.secrets) for apps that vault
 -- credentials (Mailspring, browsers, ...): ksecretd, KWallet's KF6
 -- secrets daemon — the deliberate KDE exception on this setup.

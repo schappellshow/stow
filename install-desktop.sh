@@ -138,6 +138,15 @@ else
     echo "  already installed"
 fi
 
+info "udiskie (removable-media automount; not packaged for OMLx)."
+info "pip --user, not pipx: it needs the system PyGObject + UDisks typelibs,"
+info "which a pipx-isolated venv wouldn't see."
+if ! command -v udiskie >/dev/null 2>&1; then
+    python3 -m pip install --user udiskie
+else
+    echo "  already installed"
+fi
+
 info "Directories"
 mkdir -p "$HOME/Pictures/Screenshots"
 
