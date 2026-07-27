@@ -46,6 +46,9 @@ M.globalkeys = gears.table.join(
     awful.key({ modkey }, "Return",
         function() awful.spawn(terminal) end,
         { description = "open terminal", group = "launcher" }),
+    awful.key({ modkey }, "e",
+        function() awful.spawn("thunar") end,
+        { description = "file manager (Thunar)", group = "launcher" }),
 
     -- Rofi family — all rooted at Super+Space
     awful.key({ modkey }, "space",
@@ -89,6 +92,9 @@ M.globalkeys = gears.table.join(
     awful.key({ modkey, "Shift" }, "b",
         function() awful.spawn("qs ipc call notifs toggle") end,
         { description = "notification center", group = "misc" }),
+    awful.key({ modkey, "Shift" }, "x",
+        function() awful.spawn("qs ipc call notifs clearAll") end,
+        { description = "clear notifications", group = "misc" }),
     awful.key({ modkey, "Shift" }, "m",
         function() awful.spawn("qs ipc call sysmon toggle") end,
         { description = "system monitor (conky)", group = "misc" }),
