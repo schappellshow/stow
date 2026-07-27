@@ -37,8 +37,8 @@ Singleton {
         Quickshell.execDetached(["sh", "-c",
             "if pgrep -u $USER -x conky >/dev/null; then killall conky; exit 0; fi; " +
             "cfg=\"$1\"; " +
-            "for alt in \"$cfg\" \"$HOME/.conky/titus_laptop.conkyrc\" " +
-            "\"$HOME/.conky/titus_desktop.conkyrc\"; do " +
+            "for alt in \"$cfg\" \"$HOME/.conky/titus_laptop_popup.conkyrc\" " +
+            "\"$HOME/.conky/titus_desktop_popup.conkyrc\"; do " +
             "  [ -f \"$alt\" ] && { cfg=\"$alt\"; break; }; done; " +
             "[ -f \"$cfg\" ] || exit 1; " +
             "cd \"$HOME/.conky\" 2>/dev/null; " +

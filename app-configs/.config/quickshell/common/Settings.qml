@@ -117,7 +117,7 @@ Singleton {
             property bool showNotifBell: true
             property bool showSysMon: true
             property bool showScreenLock: true
-            property string conkyConfig: "~/.conky/titus_desktop.conkyrc"
+            property string conkyConfig: "~/.conky/titus_desktop_popup.conkyrc"
 
             property int notifTimeoutMs: 6000
             property bool doNotDisturb: false
