@@ -30,7 +30,9 @@ Item {
                 : NotifHistory.unread > 0 ? String(NotifHistory.unread) : "–"
             font.family: Theme.fontFamily
             font.pointSize: 9
-            color: Settings.doNotDisturb ? Theme.gold
+            // OM magenta for DND (Theme.urgent/red is #cc2263, the brand
+            // pink) — gold is reserved for "warning" levels like 70%+ load
+            color: Settings.doNotDisturb ? Theme.urgent
                  : NotifHistory.unread > 0 ? Theme.accentBright
                  : Theme.subtext
         }
