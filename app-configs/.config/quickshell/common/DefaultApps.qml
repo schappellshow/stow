@@ -69,8 +69,18 @@ Singleton {
 # on across shells.
 set -- x-scheme-handler/http x-scheme-handler/mailto application/pdf \\
        image/png video/mp4 audio/mpeg text/plain inode/directory
+# Read with gio, not \`xdg-mime query\`: the latter is a shell script using an
+# older resolution path that can disagree with what is actually configured
+# (it kept reporting okular for application/pdf while mimeapps.list — and
+# every app that opens PDFs — had PDF Studio Viewer). gio is what GTK apps,
+# Thunar and friends consult. Fall back to xdg-mime where gio is absent.
 for m in "$@"; do
-    printf 'CUR\\t%s\\t%s\\n' "$m" "$(xdg-mime query default "$m" 2>/dev/null)"
+    if command -v gio >/dev/null 2>&1; then
+        v=$(gio mime "$m" 2>/dev/null | head -1 | sed 's/.*: //')
+        case "$v" in *.desktop) ;; *) v="" ;; esac
+    fi
+    [ -n "\${v:-}" ] || v=$(xdg-mime query default "$m" 2>/dev/null)
+    printf 'CUR\\t%s\\t%s\\n' "$m" "$v"
 done
 # Every applications dir on the XDG data path, not just the obvious two:
 # AM installs AppImages to /usr/local/share/applications and flatpak to its
