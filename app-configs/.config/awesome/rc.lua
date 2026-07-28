@@ -51,6 +51,7 @@ awful.layout.layouts = {
 
 local keys      = require("modules.keys")
 local qs_bridge = require("modules.quickshell")
+local scr_mem   = require("modules.screen_memory")
 local _rules    = require("modules.rules")
 local _auto     = require("modules.autostart")
 
@@ -90,6 +91,10 @@ end)
 -- The bar itself is quickshell (spawned in autostart.lua); this feeds it
 -- tag/layout state.
 qs_bridge.setup()
+
+-- Remember each window's output+tag so a monitor coming back doesn't leave
+-- windows piled on the wrong screen (see modules/screen_memory.lua)
+scr_mem.setup()
 
 -- Stop the systemd session target on real logout (not on Super+Ctrl+R),
 -- so graphical-session services (espanso, ...) shut down like under Plasma.

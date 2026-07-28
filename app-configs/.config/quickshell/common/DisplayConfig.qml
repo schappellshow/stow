@@ -19,6 +19,9 @@ Singleton {
     property bool replayed: false
 
     function init() {
+        // Seed the output set first, so the replay's own screen events
+        // aren't mistaken for a hotplug
+        lastOutputs = currentOutputKey();
         tryReplay();
     }
 
@@ -32,6 +35,61 @@ Singleton {
     Connections {
         target: Settings
         function onDisplayCmdChanged() { root.tryReplay(); }
+    }
+
+    // ── Hotplug ────────────────────────────────────────────────────────
+    // Monitors plugged/unplugged mid-session leave X in whatever default
+    // arrangement the driver picks (mirrored/stacked at 0,0), losing the
+    // saved layout — most visible when docking a laptop. Quickshell.screens
+    // tracks RandR, so a change in the connected-output set re-applies the
+    // saved layout.
+    //
+    // Guarded three ways: only when the set of output NAMES actually
+    // changes (not on a resolution/position change, which our own xrandr
+    // run causes → would loop); debounced, since a hotplug emits several
+    // events; and skipped while `applying` is set so a user Apply from the
+    // Displays page doesn't trigger a replay on top of itself.
+    property string lastOutputs: ""
+    property bool applying: false
+
+    function currentOutputKey() {
+        return Quickshell.screens.map(s => s.name).sort().join(",");
+    }
+
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            const key = root.currentOutputKey();
+            if (key === root.lastOutputs)
+                return;             // same outputs — geometry-only change
+            root.lastOutputs = key;
+            if (root.applying || Settings.displayCmd === "")
+                return;
+            hotplugDebounce.restart();
+        }
+    }
+
+    Timer {
+        id: hotplugDebounce
+        interval: 1200
+        onTriggered: {
+            // Re-apply only the outputs that are actually connected now;
+            // xrandr errors out on the whole command if any --output names
+            // a disconnected one.
+            const connected = Quickshell.screens.map(s => s.name);
+            const kept = [];
+            for (const chunk of Settings.displayCmd.split("--output ")) {
+                if (chunk.trim() === "")
+                    continue;
+                const name = chunk.trim().split(/\s+/)[0];
+                if (connected.indexOf(name) >= 0)
+                    kept.push("--output " + chunk.trim());
+            }
+            if (kept.length === 0)
+                return;
+            Quickshell.execDetached(["sh", "-c", "xrandr " + kept.join(" ")]);
+            root.probe();
+        }
     }
 
     function probe() {
@@ -52,10 +110,23 @@ Singleton {
                 args.push("--primary");
         }
         const cmd = args.join(" ");
+        // Hold off the hotplug watcher: our own xrandr run emits screen
+        // changes that would otherwise look like a hotplug
+        applying = true;
+        applyGuard.restart();
         Quickshell.execDetached(["sh", "-c", "xrandr " + cmd]);
         replayed = true;   // this IS the apply; don't replay on the write
         Settings.displayCmd = cmd;
         reprobe.restart();
+    }
+
+    Timer {
+        id: applyGuard
+        interval: 3000
+        onTriggered: {
+            root.applying = false;
+            root.lastOutputs = root.currentOutputKey();
+        }
     }
 
     Timer {
