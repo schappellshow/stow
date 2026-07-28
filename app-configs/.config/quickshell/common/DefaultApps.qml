@@ -72,9 +72,18 @@ set -- x-scheme-handler/http x-scheme-handler/mailto application/pdf \\
 for m in "$@"; do
     printf 'CUR\\t%s\\t%s\\n' "$m" "$(xdg-mime query default "$m" 2>/dev/null)"
 done
+# Every applications dir on the XDG data path, not just the obvious two:
+# AM installs AppImages to /usr/local/share/applications and flatpak to its
+# own exports dir, so a hardcoded pair silently hides those apps (Zen
+# Browser was missing from the list for exactly this reason).
+dirs="$HOME/.local/share/applications"
+for p in $(echo "\${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" | tr ':' ' '); do
+    dirs="$dirs $p/applications"
+done
+
 # Candidates: any .desktop advertising the type in its MimeType= line
 for m in "$@"; do
-    for d in "$HOME/.local/share/applications" /usr/share/applications; do
+    for d in $dirs; do
         [ -d "$d" ] || continue
         grep -lE "^MimeType=.*(^|;)$(echo "$m" | sed 's|/|\\\\/|')(;|$)" "$d"/*.desktop 2>/dev/null |
         while read -r f; do
@@ -83,7 +92,7 @@ for m in "$@"; do
     done
 done
 # Readable names for every .desktop we might show
-for d in "$HOME/.local/share/applications" /usr/share/applications; do
+for d in $dirs; do
     [ -d "$d" ] || continue
     for f in "$d"/*.desktop; do
         [ -f "$f" ] || continue
