@@ -28,7 +28,7 @@ sudo dnf install --allowerasing -y \
     kf6-kwallet kwallet-pam socat \
     qt6ct kf6-breeze-icons \
     pavucontrol-qt blueman networkmanager-applet thunar \
-    system-config-printer \
+    system-config-printer-gui \
     borgbackup bup \
     ghostty micro \
     fonts-ttf-hack noto-sans-fonts fonts-ttf-nerd-jetbrains-mono \
