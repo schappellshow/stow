@@ -39,5 +39,47 @@ Singleton {
         function onWallpaperPathChanged() { root.apply(); }
     }
 
-    Component.onCompleted: apply()
+    // Re-apply whenever the screen layout changes.
+    //
+    // feh paints for the geometry that exists at the moment it runs, and it
+    // is fire-and-forget — nothing corrects it afterwards. At login the
+    // startup chain calls this before DisplayConfig's xrandr has landed, so
+    // the wallpaper was drawn for the pre-layout geometry: monitors ended up
+    // showing a doubled or smeared image until feh was re-run by hand. The
+    // same applies on hotplug, where the screen set changes mid-session.
+    //
+    // Keyed on the screen COUNT and geometry rather than a plain screens
+    // binding, so it fires when the arrangement actually changes.
+    property string lastGeometry: ""
+
+    function geometryKey() {
+        return Quickshell.screens
+            .map(s => s.name + ":" + s.x + "," + s.y + ":" + s.width + "x" + s.height)
+            .sort()
+            .join("|");
+    }
+
+    Connections {
+        target: Quickshell
+        function onScreensChanged() {
+            const key = root.geometryKey();
+            if (key === root.lastGeometry)
+                return;
+            root.lastGeometry = key;
+            settle.restart();
+        }
+    }
+
+    // Debounce: a layout change emits several events, and xrandr may still
+    // be mid-flight on the first one
+    Timer {
+        id: settle
+        interval: 1500
+        onTriggered: root.apply()
+    }
+
+    Component.onCompleted: {
+        lastGeometry = geometryKey();
+        apply();
+    }
 }
