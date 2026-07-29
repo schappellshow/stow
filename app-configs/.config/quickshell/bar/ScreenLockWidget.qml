@@ -11,7 +11,9 @@ Item {
 
     visible: Settings.showScreenLock
 
-    readonly property bool closed: PowerConfig.keepAwake
+    // Closed for either hold: the manual one (Super+Z) or an app asking to
+    // stay awake (video playback). Both genuinely mean "won't auto-lock".
+    readonly property bool closed: PowerConfig.holdAwake
     // Bar convention: "on" = accent blue, "off/inactive" = gray. Closed
     // padlock = keep-awake ON (screen held on) = blue; open = will
     // auto-lock = gray.

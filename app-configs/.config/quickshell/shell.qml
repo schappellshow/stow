@@ -89,6 +89,25 @@ ShellRoot {
         }
     }
 
+    // `qs ipc call inhibit set|clear` — called by the screensaver-inhibitor
+    // daemon when an app (browser playing video, mpv, ...) asks the session
+    // to stay awake via org.freedesktop.ScreenSaver
+    IpcHandler {
+        target: "inhibit"
+
+        function set(): void {
+            PowerConfig.appInhibited = true;
+        }
+
+        function clear(): void {
+            PowerConfig.appInhibited = false;
+        }
+
+        function status(): string {
+            return PowerConfig.appInhibited ? "inhibited" : "idle";
+        }
+    }
+
     // `qs ipc call sysmon toggle` — Super+Shift+m in awesome (conky popout)
     IpcHandler {
         target: "sysmon"

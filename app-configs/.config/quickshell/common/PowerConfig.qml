@@ -8,12 +8,20 @@ import Quickshell
 Singleton {
     id: root
 
+    // Manual hold (Super+Z / the SCN pill / Settings)
     property bool keepAwake: false
+    // Held by an app via org.freedesktop.ScreenSaver — video playback etc.
+    // (see local/.local/bin/screensaver-inhibitor). Kept separate from
+    // keepAwake so a video ending can't switch off a hold the user set by
+    // hand, and vice versa.
+    property bool appInhibited: false
+
+    readonly property bool holdAwake: keepAwake || appInhibited
 
     function init() { apply(); }
 
     function apply() {
-        if (keepAwake) {
+        if (holdAwake) {
             Quickshell.execDetached(["sh", "-c", "xset s off; xset -dpms"]);
             return;
         }
@@ -24,7 +32,12 @@ Singleton {
             (d > 0 ? "xset dpms 0 0 " + d : "xset -dpms")]);
     }
 
-    onKeepAwakeChanged: apply()
+    // Watch the derived property, NOT its two inputs: a change handler on
+    // keepAwake/appInhibited runs before the holdAwake binding has
+    // re-evaluated, so apply() would act on the previous value and leave
+    // xset exactly one step behind (screen stayed lockable during video,
+    // then stayed awake after it ended).
+    onHoldAwakeChanged: apply()
 
     Connections {
         target: Settings

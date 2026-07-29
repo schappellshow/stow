@@ -50,6 +50,11 @@ run_once({ "xsettingsd" })
 -- eject/unmount is available from Thunar's sidebar.
 run_once({ "udiskie", "--no-tray" })
 
+-- Serve org.freedesktop.ScreenSaver so a video playing fullscreen keeps
+-- the screen awake. Browsers/players call that API; with nobody owning it
+-- the screen blanked and locked mid-video.
+run_once({ os.getenv("HOME") .. "/.local/bin/screensaver-inhibitor" })
+
 -- Secret Service (org.freedesktop.secrets) for apps that vault
 -- credentials (Mailspring, browsers, ...): ksecretd, KWallet's KF6
 -- secrets daemon — the deliberate KDE exception on this setup.
