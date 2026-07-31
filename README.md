@@ -1,53 +1,41 @@
-# OpenMandriva Desktop Environment + Dotfiles
+# Dotfiles (OpenMandriva)
 
-A full desktop environment replacing KDE Plasma — **AwesomeWM** (X11, window
-management) + **Quickshell** (bar, notifications, Settings app, power menu,
-OSD) — plus dotfiles, all organized as GNU Stow packages for deployment
-across fresh OpenMandriva installations.
+Shell, terminal and app configuration, organized as GNU Stow packages for
+deployment across fresh OpenMandriva installations.
+
+> **The desktop environment moved out.** AwesomeWM + Quickshell — the bar,
+> notifications, Settings app, power menu, locking, theming — now live in
+> their own repo:
+> **[awesome-quickshell-de](https://github.com/schappellshow/awesome-quickshell-de)**.
+> Install it from there; the two repos are independent and neither links to
+> the other.
 
 ## Quick start (fresh machine)
 
 ```bash
 git clone git@github.com:schappellshow/stow.git ~/stow   # or https
-cd ~/stow && ./install-desktop.sh
+cd ~/stow && ./install-dotfiles.sh
 ```
 
-Then log out and pick the **awesome** session at the SDDM login screen.
-
-`install-desktop.sh` installs every package the DE needs (dnf), builds the
-few tools OMLx doesn't ship (gammastep, xss-lock, xsecurelock), stows the
-config packages, and seeds the dark theme. It's idempotent — re-run it
-after every pull.
-
-## The desktop, in brief
-
-| Piece | What / where |
-|---|---|
-| Window manager | AwesomeWM — `app-configs/.config/awesome/` (tags, tiling, keybinds, rules) |
-| Shell layer | Quickshell — `app-configs/.config/quickshell/` (bar, widgets, notifications + history, Settings app, power menu, volume/brightness OSD, night light) |
-| Settings app | Super+Shift+S — 14 pages, writes one settings.json, replayed at login |
-| Locking | xss-lock → `lock-screen` wrapper (xsecurelock, i3lock-color fallback); Ctrl+Alt+L |
-| Launcher | rofi (Super+Space) + greenclip clipboard + rofimoji |
-| Compositor | picom · **Wallpaper**: feh, managed by Settings · **Screenshots**: flameshot (Print) |
-| Theming | Breeze dark/light everywhere via `system-theme-apply` + `icon-theme-apply` |
-
-Architecture details and every keybind/IPC command:
-`app-configs/.config/quickshell/README.md`.
+`install-dotfiles.sh` installs the apps these configs are for (dnf), stows
+`app-configs local pictures`, and enables the backup timer. It's
+idempotent — re-run it after every pull.
 
 ## Stow packages
 
 ```
 ~/stow/
-├── app-configs/     # ~/.config — awesome, quickshell, picom, rofi, kitty, ghostty, ...
-├── local/           # ~/.local — scripts (lock-screen, *-apply), .desktop entries
+├── app-configs/     # ~/.config — kitty, ghostty, micro, espanso, fastfetch,
+│                    #             systemd user units (backup-home)
+├── local/           # ~/.local — update.sh, backup-home, .desktop entries
 ├── pictures/        # ~/Pictures — wallpapers, OM logos
-├── shell/           # .bashrc, .zshrc
+├── shell/           # .bashrc, .zshrc, .bash_profile
 ├── zsh/             # Oh-My-Zsh customizations
 ├── conky/           # Conky widget themes (+ conky-startup.sh)
 └── sddm-theme/      # SDDM Sugar Candy login theme (system-level, sudo)
 ```
 
-`install-desktop.sh` stows `app-configs local pictures`. The rest are
+`install-dotfiles.sh` stows `app-configs local pictures`. The rest are
 opt-in:
 
 ```bash
@@ -56,6 +44,10 @@ stow shell zsh conky            # user-level extras
 sudo stow -t / sddm-theme       # login theme, then set Current=sugar-candy
                                 # in /etc/sddm.conf [Theme]
 ```
+
+The `conky` package is also what the desktop repo's `Super+Shift+M` system
+monitor pops out — that feature reads whatever conkyrc path you set in its
+Settings app, so it's optional and requires no coupling between the repos.
 
 ## Managing packages
 
@@ -66,15 +58,12 @@ stow -D <package>    # remove
 stow --simulate --verbose <package>   # dry run
 ```
 
-Everything is symlinked, so edits in the repo are live immediately
-(quickshell hot-reloads; awesome reloads with Super+Ctrl+R).
+Everything is symlinked, so edits in the repo are live immediately.
 
 ## Notes
 
-- Shell/session state (settings.json) lives in `~/.local/state/quickshell/`,
-  deliberately **outside** this repo, so runtime changes never dirty git.
-- The Settings app is the intended way to change wallpaper, displays,
-  keyboard, power, etc. — config files rarely need hand-editing.
-- KDE-independence is a goal: the polkit agent is lxqt-policykit, and the
-  remaining KDE ties (Breeze themes, portal-kde, plasma-apply-colorscheme)
-  are isolated inside `system-theme-apply` for future replacement.
+- `docs/laptop-credentials-runbook.md` covers the laptop's
+  Mailspring/SSH credential prompts.
+- The backup timer (`backup-home.timer`) only does useful work where
+  `/mnt/backup` exists; it no-ops with a notification otherwise, so it's
+  safe to enable everywhere.
