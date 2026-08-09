@@ -15,7 +15,7 @@ alias dnf="dnf5" && alias sudo="sudo "
 alias dsync="~/.local/bin/update.sh"
 
 #SpotX
-alias spotx="bash <(curl -sSL https://raw.githubusercontent.com/SpotX-Official/SpotX-Bash/main/spotx.sh) -f"
+alias spotx="chmod u+w ~/.local/share/spotify-launcher/install/usr/share/spotify/spotify 2>/dev/null; bash <(curl -sSL https://raw.githubusercontent.com/SpotX-Official/SpotX-Bash/main/spotx.sh) -f"
 
 #LSD
 alias ls='"lsd"'
