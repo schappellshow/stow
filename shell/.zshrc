@@ -134,3 +134,6 @@ source "/home/mike/.local/share/bash-completion/completions/am"
 # shells (scripts, tool runners) and spams a warning; init is already last.
 export _ZO_DOCTOR=0
 eval "$(zoxide init --cmd cd zsh)"
+
+# bun completions
+[ -s "/home/mike/.bun/_bun" ] && source "/home/mike/.bun/_bun"
