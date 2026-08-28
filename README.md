@@ -25,9 +25,8 @@ idempotent — re-run it after every pull.
 
 ```
 ~/stow/
-├── app-configs/     # ~/.config — kitty, ghostty, micro, espanso, fastfetch,
-│                    #             systemd user units (backup-home)
-├── local/           # ~/.local — update.sh, backup-home, .desktop entries
+├── app-configs/     # ~/.config — kitty, ghostty, micro, espanso, fastfetch
+├── local/           # ~/.local — update.sh, .desktop entries
 ├── pictures/        # ~/Pictures — wallpapers, OM logos
 ├── shell/           # .bashrc, .zshrc, .bash_profile
 ├── zsh/             # Oh-My-Zsh customizations
@@ -64,6 +63,8 @@ Everything is symlinked, so edits in the repo are live immediately.
 
 - `docs/laptop-credentials-runbook.md` covers the laptop's
   Mailspring/SSH credential prompts.
-- The backup timer (`backup-home.timer`) only does useful work where
-  `/mnt/backup` exists; it no-ops with a notification otherwise, so it's
-  safe to enable everywhere.
+- Backups moved to the desktop environment repo, where they are a setting
+  rather than a dotfile: Settings → Backups in
+  [awesome-quickshell-de](https://github.com/schappellshow/awesome-quickshell-de).
+  They are off until you turn them on, and a machine with no backup disk
+  says so on that page instead of raising a notification at every login.

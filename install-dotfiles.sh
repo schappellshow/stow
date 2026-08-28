@@ -37,12 +37,6 @@ stow -R app-configs local pictures
 info "Directories"
 mkdir -p "$HOME/Pictures/Screenshots"
 
-info "systemd user units (backup-home.timer)"
-systemctl --user daemon-reload || true
-# Backup timer only fires usefully where /mnt/backup exists (the script
-# no-ops with a notification otherwise) — safe to enable everywhere
-systemctl --user enable backup-home.timer 2>/dev/null || true
-
 info "Done"
 cat <<'EOF'
 Next steps:
