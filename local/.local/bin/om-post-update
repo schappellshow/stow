@@ -1,0 +1,215 @@
+#!/usr/bin/bash
+# om-post-update — reconcile the awesome/quickshell desktop with an
+# OpenMandriva system update.
+#
+# Safe and IDEMPOTENT: run it before an update, after one, or any time. It
+# checks each known breakage, fixes what it can, and reports what it cannot.
+#
+# Run it BEFORE the update as well as after. The lgi patch below is written to
+# handle both the old and the new shape, so applying it early costs nothing and
+# means the machine never boots into the broken state — which matters, because
+# the failure mode is "awesome will not start at all" and recovery needs a TTY.
+#
+# Background: the 2026-09-14 update on the desktop (maximus) took awesome out
+# completely and stopped espanso expanding. Both were system libraries moving
+# while something depending on them did not. See the notes under each check.
+
+set -uo pipefail
+
+red()  { printf '\033[0;31m%s\033[0m\n' "$*"; }
+grn()  { printf '\033[0;32m%s\033[0m\n' "$*"; }
+ylw()  { printf '\033[0;33m%s\033[0m\n' "$*"; }
+blu()  { printf '\033[0;34m%s\033[0m\n' "$*"; }
+box()  { echo; blu "╔══════════════════════════════════════╗"
+              blu "║ $(printf '%-36s' "$1") ║"
+              blu "╚══════════════════════════════════════╝"; echo; }
+ok()   { grn "  ok   $*"; }
+warn() { ylw "  warn $*"; }
+bad()  { red "  FAIL $*"; }
+info() { printf '       %s\n' "$*"; }
+
+PROBLEMS=0
+MARKER='om-post-update: handle both EnumClass.values shapes'
+
+# ── 1. lgi vs gobject-introspection ──────────────────────────────────────
+# glib 2.88 / gobject-introspection 1.86 marshal GObject.EnumClass.values as a
+# 1-based table of records; lgi 0.9.2 expects a raw array pointer and calls
+# core.record.fromarray on it. The mismatch kills lgi's cairo override, which
+# kills gears/color.lua, which kills awesome at rc.lua's `require "gears"` —
+# for EVERY config including the stock /etc/xdg/awesome/rc.lua.
+box "lgi / gobject-introspection"
+
+FFI=""
+for c in /usr/share/lua/*/lgi/ffi.lua; do [ -f "$c" ] && FFI="$c" && break; done
+
+# Test before touching anything. Detecting "is it patched" by looking for a
+# marker is wrong: a hand-applied fix, a future upstream fix or a package
+# update would all be missed, and we would re-patch a working file. Whether
+# lgi actually WORKS is the only question that matters.
+lgi_works() {
+    lua5.4 -e 'local l=require("lgi"); local c=l.cairo; assert(c.Status.SUCCESS==0)' 2>/dev/null
+}
+
+if [ -z "$FFI" ]; then
+    warn "lgi not installed — skipping (awesome needs it, so this is odd)"
+elif lgi_works; then
+    ok "lgi loads cairo — nothing to patch"
+    PATCHED=skip
+else
+    bad "lgi cannot load cairo; awesome would not start"
+
+    info "patching $FFI"
+    if ! sudo -v 2>/dev/null; then
+        bad "need sudo to patch lgi; re-run when you can authenticate"
+        PROBLEMS=$((PROBLEMS + 1))
+    else
+        sudo cp -n "$FFI" "$FFI.bak-om-post-update" 2>/dev/null
+        if sudo python3 - "$FFI" "$MARKER" <<'PY'
+import sys, pathlib
+path, marker = sys.argv[1], sys.argv[2]
+p = pathlib.Path(path); t = p.read_text()
+old = """   for i = 0, enum_class.n_values - 1 do
+      local val = core.record.fromarray(enum_class.values, i)
+      enum_component[core.upcase(val.value_nick):gsub('%-', '_')] = val.value
+   end"""
+new = """   -- {marker}
+   -- glib 2.88 / gobject-introspection 1.86 hand back a 1-based table of
+   -- records; older versions hand back a raw array pointer that has to be
+   -- indexed with core.record.fromarray. Support both, so this is safe to
+   -- apply before or after the update.
+   local values = enum_class.values
+   local as_table = type(values) == 'table'
+   for i = 0, enum_class.n_values - 1 do
+      local val = as_table and values[i + 1]
+                          or core.record.fromarray(values, i)
+      -- The table path yields floats where the array path gave integers.
+      local v = val.value
+      if as_table then v = math.tointeger(v) or v end
+      enum_component[core.upcase(val.value_nick):gsub('%-', '_')] = v
+   end""".replace("{marker}", marker)
+if marker in t:
+    sys.exit(0)
+if old not in t:
+    sys.stderr.write("anchor not found — lgi may have changed; patch by hand\n")
+    sys.exit(1)
+p.write_text(t.replace(old, new, 1))
+PY
+        then ok "patched (backup: $FFI.bak-om-post-update)"
+        else bad "could not patch lgi — see message above"; PROBLEMS=$((PROBLEMS + 1)); fi
+    fi
+fi
+
+# Verify for real. `awesome -k` is NOT proof: it only parses Lua and never
+# loads lgi, so it reported "syntax OK" throughout the outage.
+if [ -n "$FFI" ] && [ "${PATCHED:-}" != skip ]; then
+    if lgi_works; then
+        ok "lgi loads cairo after patching (Status.SUCCESS == 0)"
+    else
+        bad "lgi still cannot load cairo — awesome will NOT start"
+        lua5.4 -e 'local l=require("lgi"); local c=l.cairo' 2>&1 | head -3 | sed 's/^/       /'
+        PROBLEMS=$((PROBLEMS + 1))
+    fi
+fi
+
+if [ -n "$FFI" ]; then
+    # Captured to a variable, NOT piped: this probe is EXPECTED to exit
+    # non-zero (gears needs the awesome global, absent outside the process),
+    # and `set -o pipefail` would report the whole pipeline as failed even
+    # when the grep matched.
+    gears_out=$(LUA_PATH='/usr/share/awesome/lib/?.lua;/usr/share/awesome/lib/?/init.lua;;' \
+                lua5.4 -e 'require("gears")' 2>&1 || true)
+    case "$gears_out" in
+        *"field 'awesome'"*)
+            ok "awesome's gears loads (stops only at the awesome global, as expected)" ;;
+        *cairo*|*lgi*)
+            bad "gears still fails inside lgi/cairo — awesome will NOT start"
+            printf '%s\n' "$gears_out" | head -3 | sed 's/^/       /'
+            PROBLEMS=$((PROBLEMS + 1)) ;;
+        *)
+            warn "gears check inconclusive:"
+            printf '%s\n' "$gears_out" | head -3 | sed 's/^/       /' ;;
+    esac
+fi
+
+# ── 2. espanso: bundled libsystemd vs the host's libmount ────────────────
+# The AppImage bundles a libsystemd; the host's own libmount.so.1 gets handed
+# that stale copy because the AppImage's lib dir wins the search. If the bundle
+# predates the symbol versions libmount now wants, the loader dies before
+# espanso runs. Not AM-managed, so `am -u` never updates it.
+box "espanso"
+
+if ! command -v espanso >/dev/null 2>&1; then
+    ok "espanso not installed — skipping"
+else
+    if espanso --version >/dev/null 2>&1; then
+        ok "runs fine: $(espanso --version 2>/dev/null | head -1)"
+    elif espanso --version 2>&1 | grep -q 'LIBSYSTEMD'; then
+        bad "bundled libsystemd is too old for this host's libmount"
+        espanso --version 2>&1 | grep 'LIBSYSTEMD' | head -2 | sed 's/^/       /'
+        info "The system library is a strict superset, so preloading it fixes this."
+        info "Quick check:  LD_PRELOAD=/lib64/libsystemd.so.0 espanso --version"
+        info "Permanent:    add to ~/.config/systemd/user/espanso.service under [Service]:"
+        info "                Environment=LD_PRELOAD=/lib64/libsystemd.so.0"
+        info "              then: systemctl --user daemon-reload && systemctl --user restart espanso"
+        info "Better:       download a current AppImage (2.4.1+ bundles a new enough copy)"
+        PROBLEMS=$((PROBLEMS + 1))
+    else
+        warn "espanso failed for some other reason:"
+        espanso --version 2>&1 | head -3 | sed 's/^/       /'
+    fi
+    # `activating` is not `active` — a Restart=on-failure loop looks "enabled
+    # and running" at a glance but is dying every few seconds.
+    st=$(systemctl --user is-active espanso.service 2>&1)
+    case "$st" in
+        active)     ok "service: active" ;;
+        activating) bad "service: activating — it is restart-looping, not running" ; PROBLEMS=$((PROBLEMS + 1)) ;;
+        *)          warn "service: $st" ;;
+    esac
+fi
+
+# ── 3. quickshell vs Qt — detect only, cannot fix here ───────────────────
+# quickshell links Qt private APIs, which are not binary compatible across
+# minor releases, so it must be REBUILT (not upgraded) when Qt moves. There is
+# no packaged rebuild; the fix is `rpmbuild --rebuild` on its SRPM, or waiting
+# for OMLx. Symptom is a bar section that lays out but paints nothing.
+box "quickshell / Qt"
+
+if ! command -v qs >/dev/null 2>&1; then
+    ok "quickshell not installed — skipping"
+else
+    # `qs --version` prints only quickshell's own version, never Qt's. The
+    # built-against Qt appears solely in quickshell's own startup warning.
+    qslog=$(qs log 2>/dev/null || true)
+    built=$(printf '%s\n' "$qslog" | grep -oE 'built against Qt [0-9.]+' | tail -1 | awk '{print $NF}')
+    sys=$(rpm -q --qf '%{VERSION}' lib64Qt6Core 2>/dev/null)
+    if printf '%s\n' "$qslog" | grep -q 'must be rebuilt'; then
+        warn "built against Qt ${built:-?}, system has Qt ${sys:-?} — needs a REBUILD, not an upgrade"
+        info "Expect bar sections that occupy space but draw nothing. Recovery: Super+B."
+        info "Real fix:  dnf download --source quickshell && rpmbuild --rebuild quickshell-*.src.rpm"
+        info "           (bump the release so dnf does not swap yours back out)"
+    elif [ -z "$qslog" ]; then
+        warn "no quickshell log yet — re-run this after starting the session"
+        info "system Qt is ${sys:-unknown}"
+    else
+        ok "no rebuild warning in quickshell's log (system Qt ${sys:-unknown})"
+    fi
+fi
+
+# ── Summary ──────────────────────────────────────────────────────────────
+echo
+if [ "$PROBLEMS" -eq 0 ]; then
+    grn "╔═════════════════════════════════════╗"
+    grn "║ Nothing outstanding — safe to reboot ║"
+    grn "╚═════════════════════════════════════╝"
+else
+    red "╔═════════════════════════════════════╗"
+    red "║ $(printf '%-35s' "$PROBLEMS item(s) need attention above") ║"
+    red "╚═════════════════════════════════════╝"
+    echo
+    ylw "  Do NOT reboot into awesome until the lgi check passes — if it fails,"
+    ylw "  awesome will not start and you will need a TTY (Ctrl+Alt+F2) to recover."
+    ylw "  Session log, which SDDM overwrites on every login:"
+    info "cp ~/.local/share/sddm/xorg-session.log /tmp/awesome-fail.log"
+fi
+echo
+exit "$PROBLEMS"
