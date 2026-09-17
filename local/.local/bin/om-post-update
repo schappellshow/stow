@@ -195,12 +195,68 @@ else
     fi
 fi
 
+# ── 4. is a reboot required, and how urgently ────────────────────────────
+# This is the check that was missing, and it is the one that matters most
+# right after an update. On 2026-09-14 every known breakage had been handled
+# and awesome was fine, yet the session went black mid-afternoon: glib and Qt
+# had been REPLACED underneath running processes, and quickshell (902
+# mapped-but-deleted regions) aborted the moment it needed a fresh page,
+# taking the wallpaper and bar with it. Nothing reports that state; you have
+# to go looking. A library update leaves every running process holding files
+# that no longer exist, and glibc in particular is linked by everything.
+box "reboot needed?"
+
+REBOOT=0
+
+running_kernel=$(uname -r)
+newest_kernel=$(rpm -q --qf '%{VERSION}-%{RELEASE}\n' kernel-desktop 2>/dev/null | sort -V | tail -1)
+if [ -n "$newest_kernel" ] && [ "${running_kernel%%-*}" != "${newest_kernel%%-*}" ]; then
+    warn "kernel: running ${running_kernel}, installed ${newest_kernel}"
+    info "the new kernel and its firmware are not active until you reboot"
+    REBOOT=1
+else
+    ok "kernel: running the newest installed (${running_kernel})"
+fi
+
+# Count processes holding replaced libraries. Capped so this stays fast on a
+# busy session; the count only needs to be indicative, not exact.
+stale=0; worst=""; worstn=0
+for pid in $(pgrep -u "$USER" . 2>/dev/null | head -400); do
+    n=$(grep -c '(deleted)' "/proc/$pid/maps" 2>/dev/null) || continue
+    case "$n" in ''|0) continue ;; esac
+    stale=$((stale + 1))
+    if [ "$n" -gt "$worstn" ]; then
+        worstn=$n
+        worst="$(ps -o comm= -p "$pid" 2>/dev/null) (pid $pid)"
+    fi
+done
+
+if [ "$stale" -eq 0 ]; then
+    ok "no processes are holding replaced libraries"
+else
+    warn "$stale process(es) are running on libraries that no longer exist"
+    [ -n "$worst" ] && info "worst: $worst with $worstn mapped-but-deleted regions"
+    info "They work until they touch something needing a fresh page, then die."
+    info "quickshell going this way is what blacked out the session on 2026-09-14."
+    REBOOT=1
+fi
+
+if [ "$REBOOT" -eq 1 ]; then
+    ylw "  --> REBOOT once the checks above are clean."
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────────
 echo
 if [ "$PROBLEMS" -eq 0 ]; then
-    grn "╔═════════════════════════════════════╗"
-    grn "║ Nothing outstanding — safe to reboot ║"
-    grn "╚═════════════════════════════════════╝"
+    if [ "${REBOOT:-0}" -eq 1 ]; then
+        ylw "╔════════════════════════════════════════════╗"
+        ylw "║ Nothing broken, but a REBOOT is needed      ║"
+        ylw "╚════════════════════════════════════════════╝"
+    else
+        grn "╔════════════════════════════════════════════╗"
+        grn "║ Nothing outstanding, no reboot needed       ║"
+        grn "╚════════════════════════════════════════════╝"
+    fi
 else
     red "╔═════════════════════════════════════╗"
     red "║ $(printf '%-35s' "$PROBLEMS item(s) need attention above") ║"
