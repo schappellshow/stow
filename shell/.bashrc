@@ -63,3 +63,4 @@ alias ls='"lsd"'
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
 
 eval "$(zoxide init --cmd cd bash)"
+. "$HOME/.cargo/env"

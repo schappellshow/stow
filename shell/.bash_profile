@@ -21,3 +21,4 @@ export PATH
 if [ -f ~/.xprofile ]; then
     . ~/.xprofile
 fi
+. "$HOME/.cargo/env"
