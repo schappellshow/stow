@@ -29,6 +29,84 @@ bad()  { red "  FAIL $*"; }
 info() { printf '       %s\n' "$*"; }
 
 PROBLEMS=0
+
+# ── --preflight: what is in the PENDING update that has hurt before? ─────
+# The rest of this script checks whether the desktop still works. That is
+# after the fact by definition: every check below exists because something
+# already broke once. This mode is the other half — read the pending update
+# against the packages that have historically mattered on this machine, so a
+# risky one is known BEFORE it is applied rather than diagnosed afterwards.
+#
+# It predicts nothing. It only says "this package is in the update, and here
+# is what it cost you last time".
+preflight() {
+    box "pending update"
+    if ! command -v dnf >/dev/null 2>&1; then
+        bad "no dnf — cannot inspect the pending update"; return 1
+    fi
+    # dnf5 prints an "Upgrades" header and repo-progress lines alongside the
+    # table, so match the SHAPE of a package row instead of "starts with a
+    # letter": exactly three fields, with name.arch in the first. Anything
+    # looser counts the header as a package.
+    pending=$(dnf check-update --refresh 2>/dev/null \
+              | awk 'NF==3 && $1 ~ /\./ { sub(/\.[^.]+$/, "", $1); print $1 }' \
+              | sort -u)
+    if [ -z "$pending" ]; then
+        ok "nothing to update"; return 0
+    fi
+    info "$(printf '%s\n' "$pending" | wc -l) package(s) pending"
+    echo
+
+    hits=0
+    # Each line is  <extended regex>::<what it has broken here before>.
+    # The separator is :: and NOT | because the patterns themselves use | for
+    # alternation, and splitting on that would cut every pattern at its first
+    # branch and silently match almost nothing.
+    while IFS= read -r line; do
+        case "$line" in ''|'#'*) continue ;; esac
+        pat=${line%%::*}
+        note=${line#*::}
+        match=$(printf '%s\n' "$pending" | grep -iE "^($pat)$" | tr '\n' ' ')
+        [ -n "$match" ] || continue
+        hits=$((hits + 1))
+        ylw "  !! $match"
+        printf '       %s\n' "$note"
+    done <<'WATCHLIST'
+qt6-qtbase.*|lib64Qt6.*::quickshell links Qt PRIVATE APIs and must be REBUILT, not upgraded. Symptom: bar sections occupy space but paint nothing. Recovery Super+B; real fix is rpmbuild --rebuild on its SRPM.
+qt6ct::GOOD NEWS if this is a rebuild: ~/.xprofile prefers qt6ct whenever Qt can load it, so a fixed package is picked up automatically. Verify with the Qt platform theme check below.
+gobject-introspection|lib64girepository.*|glib2.0|lib64glib2.0.*::Broke lgi 2026-09-14 and awesome would not start AT ALL. Run this script (without --preflight) BEFORE rebooting; the lgi patch is safe to apply early.
+mesa|lib64dri-drivers|libdri-drivers|lib64gbm|libgbm|lib64EGL_mesa|lib64GLX_mesa::picom uses backend = "glx". If glx breaks, picom exits and you get NO compositor: no blur, opaque conky, odd fringes on menus. Fallback is backend = "xrender" with the blur section removed.
+sddm::Default DisplayServer=x11-user crashed the greeter on logout (black screen + cursor). /etc/sddm.conf.d/10-displayserver.conf pins x11 — check it survived, and that the file was not replaced.
+pam|kwallet-pam::/etc/pam.d/sddm is hand-edited: pam_kwallet must come AFTER "session include system-auth". A package replacing that file silently reverts it. Look for .rpmnew/.rpmsave afterwards.
+kf6-kwallet|kwallet::ksecretd owns the secret service. Its pam-login path is currently broken (prompts once per login); a fix here would be welcome news worth re-testing.
+pipewire|lib64pipewire|libpipewire|pipewire-pulse::Do-Not-Disturb event-sound filtering keys off media.role, and audio auto-switching watches node changes. A minor bump can move those properties.
+systemd|lib64systemd.*::espanso's AppImage bundles its own libsystemd and dies when the host's libmount moves past it. See the espanso check below.
+glibc::Linked by everything. Every running process will be holding a deleted copy until you reboot.
+xorg-server|xlibre-server|x11-server.*::The X server itself — expect to restart the session.
+plasma-integration|breeze|kvantum|qt6-style.*::Qt widget style for tray menus. kdeglobals [KDE] widgetStyle decides which one loads, NOT QT_STYLE_OVERRIDE.
+awesome::The window manager. Check rc.lua still loads before rebooting into it.
+picom::Compositor config compatibility — the wintypes and blur sections have changed shape between releases.
+networkmanager|lib64nm0::The bar's network widget talks to NM over D-Bus.
+WATCHLIST
+
+    echo
+    if [ "$hits" -eq 0 ]; then
+        ok "nothing in this update is on the watchlist"
+        info "Still worth running this script again afterwards."
+    else
+        ylw "  $hits item(s) above have caused trouble here before."
+        info "None of this means the update WILL break — only where to look if it does."
+        info "Run this script again after updating, and before rebooting."
+    fi
+    echo
+    return 0
+}
+
+if [ "${1:-}" = "--preflight" ]; then
+    preflight
+    exit $?
+fi
+
 MARKER='om-post-update: handle both EnumClass.values shapes'
 
 # ── 1. lgi vs gobject-introspection ──────────────────────────────────────
@@ -195,7 +273,145 @@ else
     fi
 fi
 
-# ── 4. is a reboot required, and how urgently ────────────────────────────
+# ── 4. compositor ────────────────────────────────────────────────────────
+# picom losing its start-up race leaves the session with NO compositor and
+# says so nowhere. It does not look like "the compositor is missing" either:
+# what you notice is conky drawing solid black and a blurred fringe around Qt
+# menus, because windows that reserve a transparent margin have nothing
+# compositing behind them. Ask X who owns the selection rather than trusting
+# the process table — picom can be running and not own it.
+box "compositor"
+
+if [ -z "${DISPLAY:-}" ]; then
+    ok "no X display — skipping (run this inside the session)"
+else
+    comp=$(python3 - 2>/dev/null <<'PY'
+from Xlib import display
+d = display.Display()
+print('1' if d.get_selection_owner(d.get_atom('_NET_WM_CM_S0')) else '0')
+PY
+)
+    case "${comp:-}" in
+        1) ok "a compositor owns _NET_WM_CM_S0" ;;
+        0) bad "NO compositor is running — no blur, no transparency"
+           info "Start it:  picom --config ~/.config/picom/picom.conf --daemon"
+           info "If that exits 1 with 'Another composite manager is already"
+           info "running', something else holds the slot: pkill -x xcompmgr."
+           info "If it fails on glx (after a mesa update), switch picom.conf to"
+           info "backend = \"xrender\" and remove the blur section."
+           PROBLEMS=$((PROBLEMS + 1)) ;;
+        *) warn "could not ask X (python-xlib missing?) — skipped" ;;
+    esac
+fi
+
+# ── 5. Qt platform theme ─────────────────────────────────────────────────
+# A platform theme plugin built against an older Qt stays on disk and is
+# ignored in silence; Qt falls back to Fusion's light palette and empty icon
+# theme. Symptom is grey tray right-click menus on a dark desktop plus
+# missing icons in Qt dialogs. ~/.xprofile picks whichever of qt6ct/kde Qt
+# can actually load, so the question here is whether that choice still holds.
+box "Qt platform theme"
+
+theme="${QT_QPA_PLATFORMTHEME:-}"
+if ! command -v qtdiag6 >/dev/null 2>&1; then
+    warn "qtdiag6 not installed — cannot verify (install qt6-qtbase-tools)"
+elif [ -z "$theme" ]; then
+    warn "QT_QPA_PLATFORMTHEME is unset — is ~/.xprofile being sourced?"
+    PROBLEMS=$((PROBLEMS + 1))
+else
+    avail=$(QT_QPA_PLATFORM=offscreen qtdiag6 2>/dev/null \
+            | sed -n '/^Theme:/,/^$/p' \
+            | sed -n 's/.*available *: *//p' | head -1 | tr -d ' ')
+    case ",$avail," in
+        *",$theme,"*) ok "Qt can load the selected platform theme ($theme)" ;;
+        "",|,,)       warn "qtdiag6 reported no theme list — skipped" ;;
+        *)            bad "Qt CANNOT load '$theme' — menus will be light grey"
+                      info "available: ${avail:-none}"
+                      info "The plugin file exists but Qt rejects it on build version."
+                      info "Nothing to fix here: it needs a rebuilt distro package."
+                      PROBLEMS=$((PROBLEMS + 1)) ;;
+    esac
+    # Which widget style loads is a separate question, and it is NOT
+    # QT_STYLE_OVERRIDE: plasma-integration applies kdeglobals [KDE]
+    # widgetStyle after Qt has honoured the variable.
+    ws=$(awk '/^\[KDE\]/{f=1;next} /^\[/{f=0} f&&/^widgetStyle=/{sub(/^widgetStyle=/,"");print;exit}' \
+         "${XDG_CONFIG_HOME:-$HOME/.config}/kdeglobals" 2>/dev/null)
+    [ -n "$ws" ] && info "kdeglobals [KDE] widgetStyle = $ws (this decides menu shape)"
+fi
+
+# ── 6. hand-edited system files ──────────────────────────────────────────
+# Two files under /etc are edited by hand on this machine. A package update
+# can replace either and leave a .rpmnew behind, silently reverting the fix.
+box "hand-edited /etc files"
+
+pamf=/etc/pam.d/sddm
+if [ ! -f "$pamf" ]; then
+    warn "$pamf missing — unexpected"
+else
+    sa=$(grep -nE '^session[[:space:]]+include[[:space:]]+system-auth' "$pamf" | head -1 | cut -d: -f1)
+    kw=$(grep -nE '^-?session.*pam_kwallet5\.so' "$pamf" | head -1 | cut -d: -f1)
+    if [ -z "$kw" ]; then
+        warn "no pam_kwallet5 session line in $pamf"
+    elif [ -z "$sa" ]; then
+        warn "no 'session include system-auth' line in $pamf"
+    elif [ "$kw" -gt "$sa" ]; then
+        ok "pam_kwallet runs after pam_systemd (line $kw > $sa)"
+    else
+        bad "pam_kwallet runs BEFORE system-auth (line $kw < $sa) — reverted"
+        info "ksecretd then starts with no XDG_RUNTIME_DIR and exits."
+        info "Move the pam_kwallet session lines below 'session include system-auth'."
+        info "A backup of the fixed file may be at ${pamf}.bak-20260921"
+        PROBLEMS=$((PROBLEMS + 1))
+    fi
+fi
+
+ddc=/etc/sddm.conf.d/10-displayserver.conf
+if grep -qs '^DisplayServer=x11$' "$ddc"; then
+    ok "sddm pinned to DisplayServer=x11"
+else
+    bad "$ddc missing or changed — logout will black-screen again"
+    info "sddm 0.21 defaults to x11-user, which crashes the greeter on logout."
+    info "Recreate it with:  [General]  /  DisplayServer=x11"
+    info "Recovery if it happens: Ctrl+Alt+F3, sudo systemctl restart sddm"
+    PROBLEMS=$((PROBLEMS + 1))
+fi
+
+leftovers=$(find /etc/pam.d /etc/sddm.conf.d -maxdepth 1 \
+            \( -name '*.rpmnew' -o -name '*.rpmsave' \) 2>/dev/null)
+if [ -n "$leftovers" ]; then
+    warn "package updates left these behind — compare them against the live files:"
+    printf '%s\n' "$leftovers" | sed 's/^/       /'
+else
+    ok "no .rpmnew/.rpmsave left under /etc/pam.d or /etc/sddm.conf.d"
+fi
+
+# ── 7. secret service ────────────────────────────────────────────────────
+# Distinct from the KWallet password prompt. The prompt is a known ksecretd
+# bug and merely annoying; the service being ABSENT means Mailspring, Proton
+# Bridge and browsers cannot store credentials at all.
+box "secret service"
+
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    ok "no session bus — skipping (run this inside the session)"
+elif gdbus call --session --dest org.freedesktop.DBus \
+        --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.NameHasOwner org.freedesktop.secrets \
+        2>/dev/null | grep -q true; then
+    ok "org.freedesktop.secrets is served"
+    if journalctl -b -t ensure-secret-service --no-pager 2>/dev/null \
+         | grep -q "unlocked via kwallet-pam handoff"; then
+        ok "unlocked by kwallet-pam — no password prompt this login"
+    else
+        info "served by the fallback, so KWallet asked for a password once."
+        info "Known ksecretd pam-login bug; not fixable from this side."
+    fi
+else
+    bad "org.freedesktop.secrets has NO owner — credential storage is broken"
+    info "Run:  ~/.local/bin/ensure-secret-service"
+    PROBLEMS=$((PROBLEMS + 1))
+fi
+
+# ── 8. is a reboot required, and how urgently ────────────────────────────
 # This is the check that was missing, and it is the one that matters most
 # right after an update. On 2026-09-14 every known breakage had been handled
 # and awesome was fine, yet the session went black mid-afternoon: glib and Qt
