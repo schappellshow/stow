@@ -82,6 +82,8 @@ kf6-kwallet|kwallet::ksecretd owns the secret service. Its pam-login path is cur
 pipewire|lib64pipewire|libpipewire|pipewire-pulse::Do-Not-Disturb event-sound filtering keys off media.role, and audio auto-switching watches node changes. A minor bump can move those properties.
 systemd|lib64systemd.*::espanso's AppImage bundles its own libsystemd and dies when the host's libmount moves past it. See the espanso check below.
 glibc::Linked by everything. Every running process will be holding a deleted copy until you reboot.
+python|python3|lib64python3.*|libpython3.*::A Python MINOR bump (3.14 -> 3.15 on 2026-11-15) strands every pip --user package: they live under ~/.local/lib/pythonX.Y and the old interpreter is removed. rm (trash-put) and udiskie die with ModuleNotFoundError. This script reinstalls those two afterwards.
+xlibre.*|x11-driver-video-.*::The amdgpu X driver is moved aside on this machine (xlibre 25.2.3 + the old driver segfaulted on any rotated output, dropping the session back to SDDM). A driver update may restore it. Check the "X video driver" section afterwards.
 xorg-server|xlibre-server|x11-server.*::The X server itself — expect to restart the session.
 plasma-integration|breeze|kvantum|qt6-style.*::Qt widget style for tray menus. kdeglobals [KDE] widgetStyle decides which one loads, NOT QT_STYLE_OVERRIDE.
 awesome::The window manager. Check rc.lua still loads before rebooting into it.
@@ -243,6 +245,96 @@ else
         activating) bad "service: activating — it is restart-looping, not running" ; PROBLEMS=$((PROBLEMS + 1)) ;;
         *)          warn "service: $st" ;;
     esac
+fi
+
+# ── 2b. pip --user tools vs the running Python ───────────────────────────
+# `pip install --user` files packages under ~/.local/lib/pythonX.Y/, named for
+# the interpreter that installed them. When the distro moves Python a minor
+# version (3.14 -> 3.15 on 2026-11-15) the old interpreter is removed and the
+# new one looks in an EMPTY directory, so every launcher in ~/.local/bin still
+# starts and then dies with ModuleNotFoundError. Two matter here: trash-put is
+# what `rm` is aliased to, and udiskie is started by awesome's autostart to
+# mount USB media — it fails silently and nothing reports it.
+# Both are cheap and safe to reinstall, so this check does it. Anything else
+# stranded is only reported: rebuilding a torch/numba stack is a decision.
+box "python user packages"
+
+pyver=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null)
+if [ -z "$pyver" ]; then
+    warn "python3 not found — skipping"
+else
+    # Run the tool rather than look for its files: the launcher exists and
+    # looks fine right up until it imports.
+    pip_tool() {
+        cmd=$1; pkg=$2; why=$3
+        command -v "$cmd" >/dev/null 2>&1 \
+            || { warn "$cmd not installed — skipping"; return; }
+        if "$cmd" --version >/dev/null 2>&1; then
+            ok "$cmd runs on Python $pyver"; return
+        fi
+        bad "$cmd cannot run on Python $pyver — $why"
+        info "reinstalling $pkg for this Python (pip --user)"
+        if python3 -m pip install --user --quiet "$pkg" >/dev/null 2>&1 \
+           && "$cmd" --version >/dev/null 2>&1; then
+            ok "$cmd fixed"
+        else
+            bad "could not reinstall $pkg — try: python3 -m pip install --user $pkg"
+            PROBLEMS=$((PROBLEMS + 1))
+        fi
+    }
+    pip_tool trash-put trash-cli "rm is aliased to it, so rm is broken"
+    pip_tool udiskie   udiskie   "USB media will not automount"
+
+    stranded=""
+    for d in "$HOME"/.local/lib/python3.*/site-packages; do
+        [ -d "$d" ] || continue
+        v=${d#"$HOME"/.local/lib/python}; v=${v%/site-packages}
+        [ "$v" = "$pyver" ] && continue
+        n=$(find "$d" -maxdepth 1 -name '*.dist-info' 2>/dev/null | wc -l)
+        [ "$n" -gt 0 ] && stranded="$stranded python$v($n)"
+    done
+    if [ -n "$stranded" ]; then
+        warn "pip --user packages left under an older Python:${stranded}"
+        info "Their launchers in ~/.local/bin fail with ModuleNotFoundError."
+        info "Reinstall what you still use:  python3 -m pip install --user <name>"
+        info "Big stacks (torch, numba, madmom) may want their own venv on an older Python."
+    else
+        ok "no pip --user packages stranded under another Python"
+    fi
+fi
+
+# ── 2c. X video driver: the amdgpu DDX must stay moved aside ─────────────
+# After the 2026-11-15 update (xlibre 25.2.2 -> 25.2.3) the packaged amdgpu X
+# driver, built against the older xlibre, segfaulted in
+# amdgpu_screen_damage_report whenever an output was rotated, dropping the
+# session back to SDDM. The fix was moving amdgpu_drv.so aside so X falls
+# through to modesetting. (OutputClass overrides do NOT work: X loads both the
+# stock rule and the override and amdgpu wins whenever it initialises.)
+# x11-driver-video-amdgpu can put the file back on any update, and then the
+# crash returns with no warning.
+#
+# Machine-specific on purpose: it only complains where the file was moved
+# aside before. The .disabled copy is the marker — the package does not own
+# it, so it survives an update that restores the real driver.
+box "X video driver"
+
+drv=""; off=""
+for f in /usr/lib64/xorg/modules/*/drivers/video/amdgpu_drv.so; do
+    [ -f "$f" ] && drv=$f && break
+done
+for f in /usr/lib64/xorg/modules/*/drivers/video/amdgpu_drv.so.disabled; do
+    [ -f "$f" ] && off=$f && break
+done
+if [ -n "$off" ] && [ -n "$drv" ]; then
+    bad "the amdgpu X driver is back: $drv"
+    info "A package update restored it. With a rotated output it crashes X to SDDM."
+    info "Move it aside again:  sudo mv -f $drv $drv.disabled"
+    info "(A newer x11-driver-video-amdgpu may have fixed this — test before keeping it off.)"
+    PROBLEMS=$((PROBLEMS + 1))
+elif [ -n "$off" ]; then
+    ok "amdgpu X driver is still moved aside (X uses modesetting)"
+else
+    ok "amdgpu X driver was never moved aside here — nothing to check"
 fi
 
 # ── 3. quickshell vs Qt — detect only, cannot fix here ───────────────────
