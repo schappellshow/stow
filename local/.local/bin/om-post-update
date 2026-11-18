@@ -30,84 +30,212 @@ info() { printf '       %s\n' "$*"; }
 
 PROBLEMS=0
 
-# ── --preflight: what is in the PENDING update that has hurt before? ─────
-# The rest of this script checks whether the desktop still works. That is
-# after the fact by definition: every check below exists because something
-# already broke once. This mode is the other half — read the pending update
-# against the packages that have historically mattered on this machine, so a
-# risky one is known BEFORE it is applied rather than diagnosed afterwards.
-#
-# It predicts nothing. It only says "this package is in the update, and here
-# is what it cost you last time".
-preflight() {
-    box "pending update"
-    if ! command -v dnf >/dev/null 2>&1; then
-        bad "no dnf — cannot inspect the pending update"; return 1
-    fi
-    # dnf5 prints an "Upgrades" header and repo-progress lines alongside the
-    # table, so match the SHAPE of a package row instead of "starts with a
-    # letter": exactly three fields, with name.arch in the first. Anything
-    # looser counts the header as a package.
-    pending=$(dnf check-update --refresh 2>/dev/null \
-              | awk 'NF==3 && $1 ~ /\./ { sub(/\.[^.]+$/, "", $1); print $1 }' \
-              | sort -u)
-    if [ -z "$pending" ]; then
-        ok "nothing to update"; return 0
-    fi
-    info "$(printf '%s\n' "$pending" | wc -l) package(s) pending"
-    echo
+# ── What counts as "desktop-critical" ────────────────────────────────────
+# ONE watch set, used twice by update.sh (via this script):
+#   --preflight      the transaction dnf is ABOUT to run (dry run)
+#   --needs-check ID the transaction dnf ACTUALLY ran (dnf history)
+#   --last-txn       newest transaction id (update.sh compares before/after)
+# Each pattern is a full-match extended regex over package NAMES. The comment
+# says what it cost here, because "why is this on the list" is the first thing
+# forgotten.
+ESPANSO=/opt/espanso/espanso      # AM AppImage; not on PATH in every shell
+# Qt: quickshell links Qt PRIVATE APIs, so it must be REBUILT per Qt minor.
+QT_RE='lib64Qt6(Core|Gui|Qml|Quick|Widgets)|qt6-qtbase.*'
+# glib / gobject-introspection: broke lgi 2026-09-14 and awesome would not
+# start at all (the 2026-11-15 glib 2.90 / GI 1.86 move is the same risk).
+GLIB_RE='lib64glib2\.0.*|libglib2\.0.*|glib2.*|gobject-introspection|lib64girepository.*|libgirepository.*'
+# lua + lua-lgi: lgi's /usr/share/lua/*/lgi/ffi.lua is hand-patched, and every
+# lua-lgi release overwrites the patch.
+LUA_RE='lua[0-9.]*|lib64lua.*|liblua.*|lua-lgi'
+# xlibre / amdgpu DDX: xlibre 25.2.3 + the packaged amdgpu driver segfaulted on
+# any rotated output; the driver is moved aside here and a package can restore it.
+XORG_RE='xlibre.*|x11-driver-video-amdgpu'
+# systemd: espanso's AppImage bundles libsystemd (tops out at LIBSYSTEMD_252).
+SYSD_RE='systemd|lib64systemd|libsystemd'
+# Anything here being REMOVED or DOWNGRADED is flagged: each is load-bearing
+# for the session, and a distro-sync --allowerasing can drop one silently.
+CRIT_RE='awesome|quickshell(-.*)?|picom|lua-lgi|lxqt-policykit|kf6-kwallet|kwallet-pam|qt6ct|spectacle|proton-pass|i3lock-color|rofi'
+# Post-update only (never a preflight prompt): packages that have broken
+# nothing by themselves but whose changes the full check verifies: sddm and pam
+# can replace the hand-edited /etc/pam.d/sddm and sddm.conf.d (.rpmnew/.rpmsave),
+# mesa can take picom's glx backend down, and the Qt theme plugins decide how
+# tray menus look.
+POST_RE='sddm|pam|mesa|lib64dri-drivers|lib64(GLX|EGL)_mesa.*|plasma-integration|qt-theme-kvantum'
 
-    hits=0
-    # Each line is  <extended regex>::<what it has broken here before>.
-    # The separator is :: and NOT | because the patterns themselves use | for
-    # alternation, and splitting on that would cut every pattern at its first
-    # branch and silently match almost nothing.
-    while IFS= read -r line; do
-        case "$line" in ''|'#'*) continue ;; esac
-        pat=${line%%::*}
-        note=${line#*::}
-        match=$(printf '%s\n' "$pending" | grep -iE "^($pat)$" | tr '\n' ' ')
-        [ -n "$match" ] || continue
-        hits=$((hits + 1))
-        ylw "  !! $match"
-        printf '       %s\n' "$note"
-    done <<'WATCHLIST'
-qt6-qtbase.*|lib64Qt6.*::quickshell links Qt PRIVATE APIs and must be REBUILT, not upgraded. Symptom: bar sections occupy space but paint nothing. Recovery Super+B; real fix is rpmbuild --rebuild on its SRPM.
-qt6ct::GOOD NEWS if this is a rebuild: ~/.xprofile prefers qt6ct whenever Qt can load it, so a fixed package is picked up automatically. Verify with the Qt platform theme check below.
-gobject-introspection|lib64girepository.*|glib2.0|lib64glib2.0.*::Broke lgi 2026-09-14 and awesome would not start AT ALL. Run this script (without --preflight) BEFORE rebooting; the lgi patch is safe to apply early.
-mesa|lib64dri-drivers|libdri-drivers|lib64gbm|libgbm|lib64EGL_mesa|lib64GLX_mesa::picom uses backend = "glx". If glx breaks, picom exits and you get NO compositor: no blur, opaque conky, odd fringes on menus. Fallback is backend = "xrender" with the blur section removed.
-sddm::Default DisplayServer=x11-user crashed the greeter on logout (black screen + cursor). /etc/sddm.conf.d/10-displayserver.conf pins x11 — check it survived, and that the file was not replaced.
-pam|kwallet-pam::/etc/pam.d/sddm is hand-edited: pam_kwallet must come AFTER "session include system-auth". A package replacing that file silently reverts it. Look for .rpmnew/.rpmsave afterwards.
-kf6-kwallet|kwallet::ksecretd owns the secret service. Its pam-login path is currently broken (prompts once per login); a fix here would be welcome news worth re-testing.
-pipewire|lib64pipewire|libpipewire|pipewire-pulse::Do-Not-Disturb event-sound filtering keys off media.role, and audio auto-switching watches node changes. A minor bump can move those properties.
-systemd|lib64systemd.*::espanso's AppImage bundles its own libsystemd and dies when the host's libmount moves past it. See the espanso check below.
-glibc::Linked by everything. Every running process will be holding a deleted copy until you reboot.
-python|python3|lib64python3.*|libpython3.*::A Python MINOR bump (3.14 -> 3.15 on 2026-11-15) strands every pip --user package: they live under ~/.local/lib/pythonX.Y and the old interpreter is removed. rm (trash-put) and udiskie die with ModuleNotFoundError. This script reinstalls those two afterwards.
-xlibre.*|x11-driver-video-.*::The amdgpu X driver is moved aside on this machine (xlibre 25.2.3 + the old driver segfaulted on any rotated output, dropping the session back to SDDM). A driver update may restore it. Check the "X video driver" section afterwards.
-xorg-server|xlibre-server|x11-server.*::The X server itself — expect to restart the session.
-plasma-integration|breeze|kvantum|qt6-style.*::Qt widget style for tray menus. kdeglobals [KDE] widgetStyle decides which one loads, NOT QT_STYLE_OVERRIDE.
-awesome::The window manager. Check rc.lua still loads before rebooting into it.
-picom::Compositor config compatibility — the wintypes and blur sections have changed shape between releases.
-networkmanager|lib64nm0::The bar's network widget talks to NM over D-Bus.
-WATCHLIST
-
-    echo
-    if [ "$hits" -eq 0 ]; then
-        ok "nothing in this update is on the watchlist"
-        info "Still worth running this script again afterwards."
-    else
-        ylw "  $hits item(s) above have caused trouble here before."
-        info "None of this means the update WILL break — only where to look if it does."
-        info "Run this script again after updating, and before rebooting."
-    fi
-    echo
-    return 0
+# A transaction as TSV rows  <Action>\t<name>\t<version-release>  sorted by
+# name, so output is deterministic. Action is Install/Upgrade/Downgrade/Remove/
+# Reinstall, or Replaced for the OLD half of an upgrade (kept only so versions
+# can be compared). Two front-ends feed it: dnf's dry run and dnf history.
+txn_tsv_history() {
+    dnf history info "$1" 2>/dev/null | awk '
+        /^  Action/ { f = 1; next }
+        f && $1 ~ /^(Install|Upgrade|Downgrade|Remove|Replaced|Reinstall)$/ {
+            p = $2; sub(/\.[^.]+$/, "", p)              # drop .arch
+            if (match(p, /-[0-9]+:/))                   # name-EPOCH:ver-rel
+                print $1 "\t" substr(p, 1, RSTART - 1) "\t" substr(p, RSTART + RLENGTH)
+        }' | sort -s -t "$(printf '\t')" -k2,2
 }
 
-if [ "${1:-}" = "--preflight" ]; then
-    preflight
-    exit $?
-fi
+# dnf5's transaction table. Section headers end in ":"; rows start with a
+# space; the old half of an upgrade is an indented "replacing <pkg> ..." row.
+# If fewer rows parse than the Transaction Summary promises, say so (ERR) —
+# a half-parsed list would read as "clean" and that is the worst failure here.
+txn_tsv_dnf5() {
+    awk '
+        /^Transaction Summary:/ { sum = 1; next }
+        sum && $1 ~ /^(Installing|Upgrading|Downgrading|Removing|Reinstalling):$/ { want += $2; next }
+        !sum && /^[A-Za-z].*:$/ {
+            h = tolower($0)
+            act = h ~ /^installing/ ? "Install" : h ~ /^upgrading/ ? "Upgrade" : \
+                  h ~ /^downgrading/ ? "Downgrade" : h ~ /^removing/ ? "Remove" : \
+                  h ~ /^reinstalling/ ? "Reinstall" : "Skip"
+            next
+        }
+        !sum && /^ / && NF >= 4 && act != "" {
+            if ($1 == "replacing") { n = $2; v = $4; a = "Replaced" }
+            else                   { n = $1; v = $3; a = act; if (a != "Skip") got++ }
+            sub(/^[0-9]+:/, "", v)
+            if (a != "Skip") print a "\t" n "\t" v
+        }
+        END { if (got < want) print "ERR\tparsed " got+0 " of " want " package rows" }
+    ' | sort -s -t "$(printf '\t')" -k2,2
+}
+
+# classify MODE <tsv on stdin>  ->  FLAG|WARN|NOTE <tab> text   (MODE: pre|post)
+#   pre : "would this update hurt?"  Qt only counts when quickshell is NOT
+#         coming along, and critical packages only on removal/downgrade.
+#   post: "did anything the desktop depends on change?"  Any Qt move counts,
+#         and any touch of a critical package does.
+# Python and systemd only count when the MINOR / MAJOR version changes: patch
+# bumps neither strand pip/pipx venvs nor move libsystemd's symbol versions.
+classify() {
+    QT="^($QT_RE)\$" GLIB="^($GLIB_RE)\$" LUA="^($LUA_RE)\$" XORG="^($XORG_RE)\$" \
+    SYSD="^($SYSD_RE)\$" CRIT="^($CRIT_RE)\$" POST="^($POST_RE)\$" ESP="$([ -x "$ESPANSO" ] && echo 1 || echo 0)" \
+    awk -F'\t' -v mode="$1" '
+    function minor(v,  p) { split(v, p, "."); return p[1] "." p[2] }
+    function major(v,  p) { split(v, p, /[.-]/); return p[1] }
+    function add(c, n) { if (++cnt[c] <= 4) lst[c] = lst[c] (lst[c] == "" ? "" : " ") n }
+    function names(c) { return lst[c] (cnt[c] > 4 ? " (+" cnt[c] - 4 " more)" : "") }
+    function out(k, t) { print k "\t" t }
+    $1 == "Replaced" { old[$2] = $3; next }
+    $1 == "" { next }
+    { if (!($2 in act)) order[++N] = $2; act[$2] = $1; new[$2] = $3 }
+    END {
+        for (i = 1; i <= N; i++) {
+            n = order[i]; a = act[n]; moved = (a != "Install")
+            if (n ~ /^quickshell/) qs = 1
+            if (moved && n ~ ENVIRON["QT"])   add("qt", n)
+            if (moved && n ~ ENVIRON["GLIB"]) add("glib", n)
+            if (moved && n ~ ENVIRON["LUA"])  add("lua", n)
+            if (moved && n ~ ENVIRON["XORG"]) add("xorg", n)
+            if (n == "python" && (a == "Upgrade" || a == "Downgrade") && (n in old) \
+                && minor(old[n]) != minor(new[n])) { pyold = minor(old[n]); pynew = minor(new[n]) }
+            if (n ~ ENVIRON["SYSD"] && moved && ENVIRON["ESP"] == 1 && (n in old) \
+                && major(old[n]) != major(new[n])) { sdold = major(old[n]); sdnew = major(new[n]) }
+            if (n ~ ENVIRON["CRIT"] && n !~ ENVIRON["LUA"] \
+                && (mode == "post" || a == "Remove" || a == "Downgrade")) add("crit", a " " n)
+            if (mode == "post" && n ~ ENVIRON["POST"]) add("post", n)
+        }
+        if (cnt["qt"]) {
+            if (mode == "post")  out("FLAG", "Qt changed: " names("qt"))
+            else if (!qs)        out("FLAG", "Qt moves (" names("qt") ") and quickshell is NOT in the transaction — it links Qt private APIs and must be rebuilt, or its bar sections will lay out but paint nothing")
+            else                 out("NOTE", "Qt moves (" names("qt") ") and quickshell comes with it — confirm after updating that its Qt matches")
+        }
+        if (cnt["glib"]) out("FLAG", "glib / gobject-introspection: " names("glib") " — this broke lgi on 2026-09-14 and awesome would not start at all")
+        if (cnt["lua"])  out("FLAG", "lua / lua-lgi: " names("lua") " — lgi is hand-patched and a new lua-lgi overwrites the patch")
+        if (cnt["xorg"]) out("FLAG", "X server / video driver: " names("xorg") " — the amdgpu DDX crashes X on a rotated output and may be restored")
+        if (pynew != "") out("FLAG", "python " pyold " -> " pynew " — pipx/pip --user venvs built for " pyold " stop working (trash-put, udiskie, rofimoji)")
+        if (sdnew != "") out(mode == "post" ? "FLAG" : "WARN", "systemd major " sdold " -> " sdnew " — espanso bundles libsystemd (tops out at LIBSYSTEMD_252); verify it still starts")
+        if (cnt["crit"]) out("FLAG", (mode == "post" ? "critical package changed: " : "critical package REMOVED or DOWNGRADED: ") names("crit"))
+        if (cnt["post"]) out("FLAG", "login / graphics / Qt theme: " names("post") " — re-check the /etc hand edits, compositor and theme")
+    }'
+}
+
+# Newest dnf transaction id (empty if the history is unreadable).
+last_txn_id() { dnf history list 2>/dev/null | awk '$1 ~ /^[0-9]+$/ { print $1; exit }'; }
+
+# ── --needs-check ID: did the transaction that RAN touch the watch set? ───
+# Exit 0 = yes (run the full checks), 1 = no (skip), 2 = could not tell.
+# Judged from `dnf history info`, i.e. what ACTUALLY changed, not from what the
+# preflight predicted: a transaction can differ (--allowerasing, a mirror
+# moving between the dry run and the real run).
+needs_check() {
+    local id=$1 tsv res
+    [ -n "$id" ] || { echo "no transaction id" >&2; return 2; }
+    tsv=$(txn_tsv_history "$id")
+    [ -n "$tsv" ] || { echo "transaction $id has no readable package list" >&2; return 2; }
+    res=$(printf '%s\n' "$tsv" | classify post | grep '^FLAG')
+    if [ -n "$res" ]; then
+        printf '%s\n' "$res" | cut -f2 | sed 's/^/  - /'
+        return 0
+    fi
+    return 1
+}
+
+# ── --preflight [FILE]: what is in the PENDING update that has hurt before? ─
+# The rest of this script checks whether the desktop still works — after the
+# fact, by definition. This is the other half: dnf's own dry run gives the REAL
+# transaction (including what --allowerasing would remove and what a
+# distro-sync would downgrade, which `dnf check-update` cannot show), and it is
+# read against the watch set above BEFORE anything is applied.
+#
+# `--assumeno` aborts, so a non-zero dnf exit is EXPECTED; success or failure is
+# judged from the output. Runs as the user, no sudo (dnf5 can read the repo
+# metadata and rpmdb unprivileged).
+#
+# Exit: 0 = clean, 1 = something flagged, 2 = could not inspect the update.
+# FILE (testing) parses a saved dry-run output instead of running dnf.
+preflight() {
+    local out tsv res flags=0 line
+    box "pending update"
+    if [ -n "${1:-}" ]; then
+        out=$(cat "$1") || { bad "cannot read $1"; return 2; }
+    else
+        command -v dnf >/dev/null 2>&1 || { bad "no dnf — cannot inspect the pending update"; return 2; }
+        out=$(dnf distro-sync --allowerasing --refresh --assumeno 2>&1)
+    fi
+    if printf '%s\n' "$out" | grep -q '^Nothing to do'; then
+        ok "nothing to update"; return 0
+    fi
+    if ! printf '%s\n' "$out" | grep -q '^Transaction Summary:'; then
+        bad "dnf did not produce a transaction summary (network? broken repo?):"
+        printf '%s\n' "$out" | tail -5 | sed 's/^/       /'
+        return 2
+    fi
+    tsv=$(printf '%s\n' "$out" | txn_tsv_dnf5)
+    if printf '%s\n' "$tsv" | grep -q '^ERR'; then
+        bad "could not read dnf's transaction table: $(printf '%s\n' "$tsv" | grep '^ERR' | cut -f2)"
+        return 2
+    fi
+    info "$(printf '%s\n' "$tsv" | awk -F'\t' '$1!="Replaced"{c[$1]++} END{for(k in c) printf "%s %d  ", k, c[k]}')"
+    echo
+    res=$(printf '%s\n' "$tsv" | classify pre)
+    while IFS=$'\t' read -r kind line; do
+        case "$kind" in
+            FLAG) flags=$((flags + 1)); red "  !! $line" ;;
+            WARN) ylw "  !  $line" ;;
+            NOTE) info "$line" ;;
+        esac
+    done <<<"$res"
+    echo
+    if [ "$flags" -eq 0 ]; then
+        ok "nothing in this update is on the watch list"
+        return 0
+    fi
+    ylw "  $flags item(s) above have caused trouble here before."
+    return 1
+}
+
+case "${1:-}" in
+    --preflight)   preflight "${2:-}"; exit $? ;;
+    --needs-check) needs_check "${2:-}"; exit $? ;;
+    --last-txn)    id=$(last_txn_id); [ -n "$id" ] && echo "$id"; exit $(( id ? 0 : 1 )) ;;
+esac
+
+# sudo for the fixes below. Inside dsync the update has just authenticated it;
+# `-n` makes that the cheap, silent path. Only fall back to a prompt when there
+# is a terminal to answer it — a piped run must fail loudly, not hang.
+have_sudo() { sudo -n true 2>/dev/null || { [ -t 0 ] && sudo -v 2>/dev/null; }; }
 
 MARKER='om-post-update: handle both EnumClass.values shapes'
 
@@ -135,11 +263,17 @@ if [ -z "$FFI" ]; then
 elif lgi_works; then
     ok "lgi loads cairo — nothing to patch"
     PATCHED=skip
+    # A new lua-lgi overwrites the hand patch. If it moved and lgi still works,
+    # the new build carries its own fix: verify only, never re-patch a working
+    # lgi (the patch is anchored on the OLD text and would just fail).
+    if dnf history info "$(last_txn_id)" 2>/dev/null | grep -qE '^  (Upgrade|Downgrade|Install) +lua-lgi-'; then
+        info "lua-lgi changed in the last transaction; the new build works, left as is"
+    fi
 else
     bad "lgi cannot load cairo; awesome would not start"
 
     info "patching $FFI"
-    if ! sudo -v 2>/dev/null; then
+    if ! have_sudo; then
         bad "need sudo to patch lgi; re-run when you can authenticate"
         PROBLEMS=$((PROBLEMS + 1))
     else
@@ -215,27 +349,30 @@ fi
 # The AppImage bundles a libsystemd; the host's own libmount.so.1 gets handed
 # that stale copy because the AppImage's lib dir wins the search. If the bundle
 # predates the symbol versions libmount now wants, the loader dies before
-# espanso runs. Not AM-managed, so `am -u` never updates it.
+# espanso runs. AM-managed (/opt/espanso), so `am -u` updates it — but only when
+# upstream ships a newer AppImage, which can lag a systemd bump. The binary is
+# tested by path: /opt/espanso is not on PATH in every shell (dsync's, cron's).
 box "espanso"
 
-if ! command -v espanso >/dev/null 2>&1; then
+if [ -x "$ESPANSO" ]; then :; elif command -v espanso >/dev/null 2>&1; then ESPANSO=$(command -v espanso); else ESPANSO=""; fi
+if [ -z "$ESPANSO" ]; then
     ok "espanso not installed — skipping"
 else
-    if espanso --version >/dev/null 2>&1; then
-        ok "runs fine: $(espanso --version 2>/dev/null | head -1)"
-    elif espanso --version 2>&1 | grep -q 'LIBSYSTEMD'; then
+    if "$ESPANSO" --version >/dev/null 2>&1; then
+        ok "runs fine: $("$ESPANSO" --version 2>/dev/null | head -1)"
+    elif "$ESPANSO" --version 2>&1 | grep -q 'LIBSYSTEMD'; then
         bad "bundled libsystemd is too old for this host's libmount"
-        espanso --version 2>&1 | grep 'LIBSYSTEMD' | head -2 | sed 's/^/       /'
+        "$ESPANSO" --version 2>&1 | grep 'LIBSYSTEMD' | head -2 | sed 's/^/       /'
         info "The system library is a strict superset, so preloading it fixes this."
-        info "Quick check:  LD_PRELOAD=/lib64/libsystemd.so.0 espanso --version"
+        info "Quick check:  LD_PRELOAD=/lib64/libsystemd.so.0 $ESPANSO --version"
         info "Permanent:    add to ~/.config/systemd/user/espanso.service under [Service]:"
         info "                Environment=LD_PRELOAD=/lib64/libsystemd.so.0"
         info "              then: systemctl --user daemon-reload && systemctl --user restart espanso"
-        info "Better:       download a current AppImage (2.4.1+ bundles a new enough copy)"
+        info "Better:       am -u (a current AppImage, 2.4.1+, bundles a new enough copy)"
         PROBLEMS=$((PROBLEMS + 1))
     else
         warn "espanso failed for some other reason:"
-        espanso --version 2>&1 | head -3 | sed 's/^/       /'
+        "$ESPANSO" --version 2>&1 | head -3 | sed 's/^/       /'
     fi
     # `activating` is not `active` — a Restart=on-failure loop looks "enabled
     # and running" at a glance but is dying every few seconds.
@@ -247,17 +384,25 @@ else
     esac
 fi
 
-# ── 2b. pip --user tools vs the running Python ───────────────────────────
-# `pip install --user` files packages under ~/.local/lib/pythonX.Y/, named for
-# the interpreter that installed them. When the distro moves Python a minor
-# version (3.14 -> 3.15 on 2026-11-15) the old interpreter is removed and the
-# new one looks in an EMPTY directory, so every launcher in ~/.local/bin still
-# starts and then dies with ModuleNotFoundError. Two matter here: trash-put is
-# what `rm` is aliased to, and udiskie is started by awesome's autostart to
-# mount USB media — it fails silently and nothing reports it.
-# Both are cheap and safe to reinstall, so this check does it. Anything else
-# stranded is only reported: rebuilding a torch/numba stack is a decision.
-box "python user packages"
+# ── 2b. Python CLI tools (pipx) vs the running Python ────────────────────
+# A pipx app lives in its own venv, built for the interpreter that created it.
+# When the distro moves Python a minor version (3.14 -> 3.15 on 2026-11-15) the
+# old interpreter is removed, the venv's python symlink dangles, and every
+# launcher in ~/.local/bin still starts and then dies. Three matter here:
+# trash-put is what `rm` is aliased to, udiskie is started by awesome's
+# autostart to mount USB media (it fails silently), and rofimoji is the emoji
+# picker. `pipx reinstall-all` rebuilds every venv on the current Python and
+# is cheap and safe. These were pip --user installs before pipx, and a pip
+# --user package files itself under ~/.local/lib/pythonX.Y, so the old ones
+# are reported (never deleted) below.
+#
+# udiskie needs the SYSTEM PyGObject, so its venv must be made with
+# --system-site-packages. pipx records venv args in the app's metadata and
+# `reinstall` replays them (pipx/commands/reinstall.py passes
+# venv.pipx_metadata.venv_args), so reinstall-all keeps the flag. The explicit
+# fallback below still exists because a venv that LOST the flag fails with a
+# GI import error and would otherwise look like an unfixable breakage.
+box "python tools (pipx)"
 
 pyver=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null)
 if [ -z "$pyver" ]; then
@@ -265,26 +410,59 @@ if [ -z "$pyver" ]; then
 else
     # Run the tool rather than look for its files: the launcher exists and
     # looks fine right up until it imports.
-    pip_tool() {
-        cmd=$1; pkg=$2; why=$3
-        command -v "$cmd" >/dev/null 2>&1 \
-            || { warn "$cmd not installed — skipping"; return; }
-        if "$cmd" --version >/dev/null 2>&1; then
-            ok "$cmd runs on Python $pyver"; return
-        fi
-        bad "$cmd cannot run on Python $pyver — $why"
-        info "reinstalling $pkg for this Python (pip --user)"
-        if python3 -m pip install --user --quiet "$pkg" >/dev/null 2>&1 \
-           && "$cmd" --version >/dev/null 2>&1; then
-            ok "$cmd fixed"
-        else
-            bad "could not reinstall $pkg — try: python3 -m pip install --user $pkg"
-            PROBLEMS=$((PROBLEMS + 1))
-        fi
-    }
-    pip_tool trash-put trash-cli "rm is aliased to it, so rm is broken"
-    pip_tool udiskie   udiskie   "USB media will not automount"
+    pipx_app_ok() { command -v "$1" >/dev/null 2>&1 && "$1" --version >/dev/null 2>&1; }
+    PIPX_APPS="trash-put:trash-cli:rm is aliased to it, so rm is broken
+udiskie:udiskie:USB media will not automount
+rofimoji:rofimoji:the emoji picker will not start"
 
+    # ~/.local/bin/pipx can be a stale pip --user shim from before the distro
+    # package (it imports pipx from the old Python's site-packages), so test
+    # that pipx RUNS rather than that the name exists.
+    if ! pipx --version >/dev/null 2>&1; then
+        warn "pipx is missing or broken — cannot rebuild the Python tools"
+        info "Install the distro package:  sudo dnf install python-pipx"
+        [ -e "$HOME/.local/bin/pipx" ] && info "A stale ~/.local/bin/pipx shadows it; remove that:  rm ~/.local/bin/pipx"
+        while IFS=: read -r cmd pkg why; do
+            pipx_app_ok "$cmd" && ok "$cmd runs on Python $pyver" \
+                || { command -v "$cmd" >/dev/null 2>&1 && bad "$cmd is broken — $why" && PROBLEMS=$((PROBLEMS + 1)); }
+        done <<<"$PIPX_APPS"
+    else
+        # Rebuild when an app fails OR a venv was built for another minor:
+        # an app can still limp along on a dangling-but-present interpreter.
+        need=0; stale=""
+        while IFS=: read -r cmd pkg why; do
+            command -v "$cmd" >/dev/null 2>&1 || continue
+            pipx_app_ok "$cmd" || { need=1; stale="$stale $cmd"; }
+        done <<<"$PIPX_APPS"
+        for cfg in "${PIPX_HOME:-$HOME/.local/share/pipx}"/venvs/*/pyvenv.cfg; do
+            [ -f "$cfg" ] || continue
+            v=$(sed -n 's/^version\(_info\)\? *= *\([0-9]*\.[0-9]*\).*/\2/p' "$cfg" | head -1)
+            [ -n "$v" ] && [ "$v" != "$pyver" ] && { need=1; stale="$stale $(basename "$(dirname "$cfg")")(py$v)"; }
+        done
+        if [ "$need" -eq 1 ]; then
+            warn "pipx apps built for another Python or failing:${stale} (system Python $pyver)"
+            info "running: pipx reinstall-all"
+            pipx reinstall-all >/dev/null 2>&1 || warn "pipx reinstall-all reported errors"
+        fi
+        while IFS=: read -r cmd pkg why; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+                warn "$cmd not installed — pipx install $pkg"
+            elif pipx_app_ok "$cmd"; then
+                ok "$cmd runs on Python $pyver"
+            elif [ "$cmd" = udiskie ] \
+                 && pipx install --force --system-site-packages udiskie >/dev/null 2>&1 \
+                 && pipx_app_ok udiskie; then
+                ok "udiskie fixed (reinstalled with --system-site-packages for PyGObject)"
+            else
+                bad "$cmd still cannot run — $why"
+                info "try:  pipx install --force $pkg"
+                PROBLEMS=$((PROBLEMS + 1))
+            fi
+        done <<<"$PIPX_APPS"
+    fi
+
+    # Leftovers from the pip --user days. Reported, not touched: rebuilding a
+    # torch/numba stack is a decision, not a fix.
     stranded=""
     for d in "$HOME"/.local/lib/python3.*/site-packages; do
         [ -d "$d" ] || continue
@@ -296,7 +474,7 @@ else
     if [ -n "$stranded" ]; then
         warn "pip --user packages left under an older Python:${stranded}"
         info "Their launchers in ~/.local/bin fail with ModuleNotFoundError."
-        info "Reinstall what you still use:  python3 -m pip install --user <name>"
+        info "Reinstall what you still use:  pipx install <name>"
         info "Big stacks (torch, numba, madmom) may want their own venv on an older Python."
     else
         ok "no pip --user packages stranded under another Python"
@@ -313,8 +491,9 @@ fi
 # x11-driver-video-amdgpu can put the file back on any update, and then the
 # crash returns with no warning.
 #
-# Machine-specific on purpose: it only complains where the file was moved
-# aside before. The .disabled copy is the marker — the package does not own
+# Machine-specific on purpose: it only acts where the file was moved aside
+# before, and then FIXES it (a warning nobody reads is how the crash came back
+# unannounced). The .disabled copy is the marker — the package does not own
 # it, so it survives an update that restores the real driver.
 box "X video driver"
 
@@ -326,11 +505,17 @@ for f in /usr/lib64/xorg/modules/*/drivers/video/amdgpu_drv.so.disabled; do
     [ -f "$f" ] && off=$f && break
 done
 if [ -n "$off" ] && [ -n "$drv" ]; then
-    bad "the amdgpu X driver is back: $drv"
-    info "A package update restored it. With a rotated output it crashes X to SDDM."
-    info "Move it aside again:  sudo mv -f $drv $drv.disabled"
-    info "(A newer x11-driver-video-amdgpu may have fixed this — test before keeping it off.)"
-    PROBLEMS=$((PROBLEMS + 1))
+    warn "the amdgpu X driver is back: $drv (a package update restored it)"
+    info "With a rotated output it crashes X to SDDM. Moving it aside again."
+    # -f: the .disabled copy is stale by definition (the package owns the new
+    # file), so the newest restored driver replaces it as the kept copy.
+    if have_sudo && sudo mv -f "$drv" "$drv.disabled" && [ ! -e "$drv" ]; then
+        ok "moved aside again (X will use modesetting from the next login)"
+        info "(A newer x11-driver-video-amdgpu may have fixed this — test before keeping it off.)"
+    else
+        bad "could not move it aside — run:  sudo mv -f $drv $drv.disabled"
+        PROBLEMS=$((PROBLEMS + 1))
+    fi
 elif [ -n "$off" ]; then
     ok "amdgpu X driver is still moved aside (X uses modesetting)"
 else
@@ -339,9 +524,9 @@ fi
 
 # ── 3. quickshell vs Qt — detect only, cannot fix here ───────────────────
 # quickshell links Qt private APIs, which are not binary compatible across
-# minor releases, so it must be REBUILT (not upgraded) when Qt moves. There is
-# no packaged rebuild; the fix is `rpmbuild --rebuild` on its SRPM, or waiting
-# for OMLx. Symptom is a bar section that lays out but paints nothing.
+# minor releases, so it must be REBUILT (not upgraded) when Qt moves. OM does
+# rebuild it per Qt minor (0.2.1-7 matches Qt 6.12) but a Qt bump can land first;
+# until that rebuild ships, `rpmbuild --rebuild` on its SRPM is the stopgap. Symptom is a bar section that lays out but paints nothing.
 box "quickshell / Qt"
 
 if ! command -v qs >/dev/null 2>&1; then
